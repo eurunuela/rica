@@ -67,6 +67,7 @@ class App extends Component {
     this.setState({ carpetFigures: childData[1] });
     this.setState({ info: childData[3] });
     this.setState({ originalData: childData[4] });
+    this.setState({ niftiFile: childData[5] });
   };
 
   render() {
@@ -150,6 +151,7 @@ class App extends Component {
                   componentData={this.state.componentData}
                   componentFigures={this.state.componentFigures}
                   originalData={this.state.originalData}
+                  niftiFile={this.state.niftiFile}
                 />
               </TabPanel>
               <TabPanel>

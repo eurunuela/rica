@@ -17,6 +17,8 @@ import {
   resetAndUpdateColors,
 } from "./PlotUtils";
 
+import readNIFTI from "./NiftiLoader";
+
 Chart.register(zoomPlugin); // REGISTER PLUGIN
 
 const acceptedColor = "#86EFAC";
@@ -50,6 +52,15 @@ class Plots extends React.Component {
     this.setState({ variance: parsed_data[1] });
     this.setState({ kappa: parsed_data[2] });
     this.setState({ rho: parsed_data[3] });
+    var niftiFile = this.props.niftiFile;
+    // Only keep niftiFile element with ICA on its name but not Accepted
+    niftiFile = niftiFile.filter(
+      (element) =>
+        element.name.includes("ICA") && !element.name.includes("Accepted")
+    );
+    // Change niftiFile from list to string
+    niftiFile = niftiFile.map((element) => element.name)[0];
+    this.setState({ niftiFile: niftiFile });
   }
 
   // Only read data on the first render of the Plots page
@@ -316,10 +327,21 @@ class Plots extends React.Component {
             </div>
           </div>
           <div className="flex float-right w-5/12 mt-12 mr-16 z-5">
-            <img
+            {/* <img
               className="w-full max-w-full"
               alt=""
               src={this.state.clickedElement}
+            /> */}
+            {readNIFTI("components", this.props.niftiFile)}
+            <canvas id="myCanvas" width="100" height="100"></canvas>
+            <br />
+            <input
+              type="range"
+              min="1"
+              max="100"
+              value="50"
+              class="slider"
+              id="myRange"
             />
           </div>
         </div>

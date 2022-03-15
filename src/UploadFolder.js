@@ -49,12 +49,18 @@ class UploadFolder extends Component {
     let comps = [];
     let info = [];
     let originalData = [];
+    let nifti = [];
 
     let files = e.target.files;
 
     for (var i in files) {
       let filename = files[i].name;
       if (filename !== undefined) {
+        // Save "*_components.nii.gz" file to nifti
+        if (filename.includes("z_components.nii.gz")) {
+          nifti.push(files[i]);
+        }
+
         // Save component figures into array
         if (filename.includes("comp_")) {
           let imgReader = new FileReader();
@@ -111,6 +117,7 @@ class UploadFolder extends Component {
     data.push(comps);
     data.push(info);
     data.push(originalData);
+    data.push(nifti);
 
     console.log("Data read into dictionary.");
 
