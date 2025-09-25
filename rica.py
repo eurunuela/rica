@@ -250,7 +250,7 @@ def main():
                         bg_img=None,
                         # display_mode="mosaic",
                         # cut_coords=5,
-                        vmax=comp_nii.get_fdata().max() * 0.1,
+                        vmax=np.max(np.abs(comp_nii.get_fdata())) * 0.1,
                         # cmap=png_cmap,
                         # symmetric_cbar=True,
                         colorbar=True,
@@ -277,7 +277,7 @@ def main():
                             f"Time Series {selected_comp}",
                             "One-sided FFT",
                         ),
-                        vertical_spacing=0.5,
+                        vertical_spacing=0.25,
                     )
                     # The color should be based on whether the component is accepted or rejected
                     ts_fig.add_trace(
@@ -307,6 +307,11 @@ def main():
                         col=1,
                     )
                     # Update layout
+                    ts_fig.update_layout(
+                        height=400,
+                        showlegend=False,
+                        margin=dict(t=20, b=10, l=40, r=40),
+                    )
                     ts_fig.update_layout(height=400, showlegend=False)
                     ts_fig.update_xaxes(title_text="Time (volumes)", row=1, col=1)
                     ts_fig.update_xaxes(title_text="Frequency (Hz)", row=2, col=1)
