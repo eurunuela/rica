@@ -118,6 +118,24 @@ def main():
             color_mapping.get(c, "#000000") for c in comptable_cds.data["classif"]
         ]
 
+        # Create df for table selection check
+        df = pd.DataFrame(comptable_cds.data)
+        # Make sure component is int
+        df["component"] = df["component"].astype(int)
+        # Sort by component number
+        df = df.sort_values("component")
+        # Reorder columns to have component first
+        cols = df.columns.tolist()
+        cols.insert(0, cols.pop(cols.index("component")))
+        df = df[cols]
+
+        # Add some styling to the classif column
+        def color_classif(val):
+            color = color_mapping.get(val, "#000000")
+            return f"color: {color}; font-weight: bold"
+
+        styled_df = df.style.applymap(color_classif, subset=["classif"])
+
         selected_indices = []
         if selected_components:
             for comp in selected_components:
@@ -324,9 +342,21 @@ def main():
                         f"Component index {comp_index} is out of bounds for the NIfTI image."
                     )
             else:
-                st.info(
-                    f"Select a component from the plots to view its spatial map. Selected components {selected_components}"
-                )
+                st.info("Select a component from the plots to view its spatial map.")
+
+        # Add the metrics table at the bottom, full width, and make it so that if a component is selected in the table,
+        # it updates the query params to trigger a rerun and update the plots
+        # The table is a df comptable_cds.data
+        st.markdown("### Component Metrics Table")
+        # Render the styled dataframe
+        st.dataframe(
+            styled_df,
+            use_container_width=True,
+            height=300,
+            on_select="rerun",
+            key="metrics_table",
+            selection_mode="single-row",
+        )
 
 
 if __name__ == "__main__":
