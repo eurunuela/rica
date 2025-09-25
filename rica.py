@@ -313,11 +313,15 @@ def main():
         if "index" in df.columns:
             df = df.drop(columns=["index"])
 
+        # Ensure DataFrame has a clean integer index (no index column shown in UI)
+        df = df.reset_index(drop=True)
+
         # Add some styling to the classif column
         def color_classif(val):
             color = color_mapping.get(val, "#000000")
             return f"color: {color}; font-weight: bold"
 
+        # Note: .hide_index() is not available in some pandas versions; avoid calling it
         styled_df = df.style.applymap(color_classif, subset=["classif"])
 
         selected_indices = []
@@ -414,17 +418,32 @@ def main():
 
         if selected_components:
             selected_comp = str(selected_components[0])
-            # Create a centered div to show selected component
-            st.markdown(
-                """
-                <div style="border: 1px solid #83c5fc; background-color: #d0e9ff; padding: 1em; border-radius: 5px; text-align: center; max-width: 30%; margin-left: auto; margin-right: auto; margin-bottom: 1em;">
-                Selected component: <strong>{selected_comp}</strong>
-                </div>
-                """.format(
-                    selected_comp=selected_comp
-                ),
-                unsafe_allow_html=True,
+            # Look up the classification for this component so we can color the banner
+            comp_idx = selected_components[0]
+            try:
+                comp_pos = comptable_cds.data["component"].index(str(comp_idx))
+                comp_class = comptable_cds.data["classif"][comp_pos]
+            except Exception:
+                comp_class = None
+
+            # Primary color for border/text from existing mapping; choose a soft bg
+            primary_color = color_mapping.get(comp_class, "#83c5fc")
+            bg_map = {
+                "accepted": "#dff6e9",
+                "rejected": "#ffe9e9",
+                "ignored": "#e9f0ff",
+            }
+            bg_color = bg_map.get(comp_class, "#d0e9ff")
+
+            style = (
+                f"border: 1px solid {primary_color}; background-color: {bg_color}; "
+                "padding: 1em; border-radius: 5px; text-align: center; max-width: 30%; "
+                "margin-left: auto; margin-right: auto; margin-bottom: 1em; color: "
+                f"{primary_color}; font-weight: bold;"
             )
+
+            html = f"<div style='{style}'>Selected component: <strong>{selected_comp}</strong></div>"
+            st.markdown(html, unsafe_allow_html=True)
 
         # Render the layout in the left half of the Streamlit page so plots occupy the left column
         left_col, right_col = st.columns([1, 1])
