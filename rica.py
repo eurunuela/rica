@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 import streamlit.components.v1 as components
+from bokeh import events
 from bokeh.layouts import column, row
 from bokeh.models import ColumnDataSource, CustomJS, Div
 from nilearn import plotting
@@ -185,16 +186,12 @@ def find_metrics_file(folder: str, ends_with: str) -> Path | None:
 
 
 def main():
-    # Check for selection changes in query params to trigger rerun
-    current_selected = st.query_params.get("selected", "")
-    if (
-        "last_selected" not in st.session_state
-        or st.session_state.last_selected != current_selected
-    ):
-        st.session_state.last_selected = current_selected
-        st.rerun()
-
     selected_components = []
+    current_selected = st.query_params.get("selected", "")
+    selected_source = st.query_params.get("selected_source", None)
+    if selected_source:
+        st.session_state["last_selection_source"] = selected_source
+        print(f"[DEBUG] Selection source from query param: {selected_source}")
     for x in current_selected.split(","):
         if x:
             parts = x.split("_")
@@ -209,8 +206,10 @@ def main():
     )
     # Hide the checkbox with CSS
     st.markdown(
-        """<style> .stCheckbox {display: none;} </style>""", unsafe_allow_html=True
+        """<style> .stCheckbox {opacity: 0;} </style>""", unsafe_allow_html=True
     )
+    
+
 
     st.set_page_config(page_title="Rica", layout="wide")
     st.title("Rica")
@@ -298,6 +297,16 @@ def main():
                 pass
         comptable_cds = ColumnDataSource(data=data_dict)
 
+        # Ensure there is a boolean 'checked' column for the DataTable checkboxes.
+        # If a previous run set selections via query params, reflect them here.
+        if "checked" not in comptable_cds.data:
+            try:
+                nrows = len(comptable_cds.data["component"])
+            except Exception:
+                # Fallback: use length of first data column
+                nrows = len(next(iter(comptable_cds.data.values())))
+            comptable_cds.data["checked"] = [False] * nrows
+
         # Create df for table selection check
         df = pd.DataFrame(comptable_cds.data)
         # Make sure component is int
@@ -322,7 +331,8 @@ def main():
             return f"color: {color}; font-weight: bold"
 
         # Note: .hide_index() is not available in some pandas versions; avoid calling it
-        styled_df = df.style.applymap(color_classif, subset=["classif"])
+        # We do not render a styled pandas Styler here because the editable table
+        # is rendered using Streamlit's `st.data_editor` below.
 
         selected_indices = []
         if selected_components:
@@ -332,7 +342,19 @@ def main():
                     selected_indices.append(idx)
                 except ValueError:
                     pass
+        print(
+            f"[DEBUG] Setting Bokeh selected.indices to: {selected_indices} (source: {st.session_state.get('last_selection_source')})"
+        )
         comptable_cds.selected.indices = selected_indices
+
+        # Reflect initial selection in the 'checked' column
+        try:
+            for i in range(len(comptable_cds.data["checked"])):
+                comptable_cds.data["checked"][i] = i in selected_indices
+            # Re-assign to trigger Bokeh change events if needed
+            comptable_cds.data = dict(comptable_cds.data)
+        except Exception:
+            pass
 
         kappa_elbow = dynamic_plots.get_elbow_val(
             cross_comp_metrics_dict, "kappa_elbow"
@@ -376,8 +398,16 @@ def main():
             args=dict(source=comptable_cds, div=selected_div),
             code="""
             const inds = cb_obj.indices;
-            console.log('Selection changed:', inds);
             const data = source.data;
+            if (data['checked']) {
+                for (let i = 0; i < data['checked'].length; i++) {
+                    data['checked'][i] = false;
+                }
+                for (let j = 0; j < inds.length; j++) {
+                    data['checked'][inds[j]] = true;
+                }
+                source.data = data;
+            }
             let components = '';
             for (let i = 0; i < inds.length; i++) {
                 const idx = inds[i];
@@ -387,29 +417,69 @@ def main():
                     const selected_padded_C = 'ica_' + selected_padded;
                     components += selected_padded_C;
                     if (i < inds.length - 1) components += ',';
-                    console.log('Selected component:', selected);
                 }
             }
-            // Update parent query params
+            // Update parent query params and set selected_source=bokeh
             const parentUrl = new URL(window.parent.location.href);
             parentUrl.searchParams.set('selected', components);
+            parentUrl.searchParams.set('selected_source', 'bokeh');
             window.parent.history.replaceState(null, '', parentUrl);
-            console.log('Updated parent URL to:', parentUrl.toString());
             // Trigger rerun by toggling the hidden checkbox in parent
             const checkbox = window.parent.document.querySelector('input[type="checkbox"]');
-            if (checkbox) {
-                console.log('Found checkbox in parent, clicking');
-                checkbox.click();
-            } else {
-                console.log('Checkbox not found in parent');
-            }
+            if (checkbox) { checkbox.click(); }
             """,
         )
 
         # Attach callback to the selection of the comptable CDS
         comptable_cds.selected.js_on_change("indices", cb)
 
+        # Add a DocumentReady JS listener in the Bokeh document which listens
+        # for window.postMessage messages from the parent Streamlit page. This
+        # allows us to update the Bokeh ColumnDataSource selection live when
+        # the Streamlit-side checkbox table is edited, without requiring a
+        # Streamlit rerun.
+        message_listener = CustomJS(
+            args=dict(source=comptable_cds),
+            code="""
+            (function(){
+                if (window._rica_message_listener_added) return;
+                window._rica_message_listener_added = true;
+                window.addEventListener('message', function(event){
+                    try {
+                        const data = event.data;
+                        if (!data || data.type !== 'rica:set_selected') return;
+                        const selected_tokens = data.selected || [];
+                        const comps = source.data['component'];
+                        const inds = [];
+                        for (let i=0; i<selected_tokens.length; i++){
+                            let token = selected_tokens[i];
+                            if (typeof token === 'string' && token.startsWith('ica_')){
+                                token = token.split('_')[1];
+                            }
+                            token = String(parseInt(token, 10));
+                            for (let j=0; j<comps.length; j++){
+                                if (String(comps[j]) === token) { inds.push(j); break; }
+                            }
+                        }
+                        source.selected.indices = inds;
+                        source.change.emit();
+                    } catch (e) {
+                        console.log('rica message handler error', e);
+                    }
+                }, false);
+            })();
+            """,
+        )
+        # Attach the listener to one of the figures so it runs on document ready
+        try:
+            kappa_rho_plot.js_on_event(events.DocumentReady, message_listener)
+        except Exception:
+            # If attaching fails, continue silently; selection sync will still work via query param/rerun
+            pass
+
         # Compose a single layout so all models belong to the same document
+        # The component metrics table is rendered outside of Bokeh (below),
+        # so we don't include it in the Bokeh layout here.
         layout = column(
             row(kappa_rho_plot, varexp_pie_plot),
             row(kappa_sorted_plot, rho_sorted_plot),
@@ -454,9 +524,9 @@ def main():
         with right_col:
             if selected_components:
                 selected_comp = str(selected_components[0])
-                # Components are usually 1-indexed in filenames
+                # Components may be 0-indexed or 1-indexed depending on the dataset
                 comp_index = selected_components[0]
-                comp_col = f"ICA_{comp_index:02d}"
+                
                 # Find the position of this component in the CDS (since CDS may be sorted)
                 try:
                     comp_pos = comptable_cds.data["component"].index(str(comp_index))
@@ -469,9 +539,12 @@ def main():
                     accep_rejec = None
 
                 line_color = color_mapping.get(accep_rejec, "#000000")
-                if 0 <= comp_index < ica_nii_img.shape[3]:
+                # Convert to the 0-indexed form for accessing the NIfTI image
+                nii_index = comp_index  # If components are 0-indexed, no conversion needed
+                if 0 <= nii_index < ica_nii_img.shape[3]:  # Check against actual number of components
+                    comp_col = f"ICA_{comp_index:02d}"
                     # Use cached nilearn view HTML to avoid re-rendering every rerun
-                    view_html = render_nilearn_view_html(str(ica_nii), comp_index)
+                    view_html = render_nilearn_view_html(str(ica_nii), nii_index)
                     st.markdown(
                         '<div style="margin-bottom: 0px;">', unsafe_allow_html=True
                     )
@@ -494,24 +567,89 @@ def main():
 
                 else:
                     st.error(
-                        f"Component index {comp_index} is out of bounds for the NIfTI image."
+                        f"Component index {comp_index} is out of bounds for the NIfTI image (max: {ica_nii_img.shape[3]-1})."
                     )
             else:
                 st.info("Select a component from the plots to view its spatial map.")
 
-        # Add the metrics table at the bottom, full width, and make it so that if a component is selected in the table,
-        # it updates the query params to trigger a rerun and update the plots
-        # The table is a df comptable_cds.data
+        # Add the metrics table at the bottom, full width.
+        # Table now allows selection by clicking on rows and highlights the selected component.
         st.markdown("### Component Metrics Table")
-        # Render the styled dataframe
-        st.dataframe(
-            styled_df,
-            use_container_width=True,
-            height=300,
-            on_select="rerun",
-            key="metrics_table",
-            selection_mode="single-row",
-        )
+        
+        # Find the classification of the selected component to use the matching color
+        comp_color = "#808080"  # Default gray color
+        selected_class = None
+        try:
+            if selected_components:
+                selected_comp = selected_components[0]
+                comp_pos = comptable_cds.data["component"].index(str(selected_comp))
+                selected_class = comptable_cds.data["classif"][comp_pos]
+                comp_color = color_mapping.get(selected_class, "#808080")
+        except (ValueError, KeyError):
+            # If we can't find the component or its classification, use default color
+            pass
+        
+        # Apply styling to highlight the selected row with the matching color
+        def highlight_selected_row(data_df, selected_comp_list, highlight_color):
+            # Create an empty DataFrame with the same shape as the input
+            styles = pd.DataFrame('', index=data_df.index, columns=data_df.columns)
+            # Find the row(s) that match the selected component and apply styling
+            if selected_comp_list:
+                selected_mask = data_df["component"] == selected_comp_list[0]
+                # Create a background color with good contrast
+                bg_color = f'background-color: {highlight_color}; color: black; font-weight: bold'
+                styles.loc[selected_mask] = bg_color
+            return styles
+        
+        # Display the table with highlighted selected row
+        st.dataframe(df.style.apply(highlight_selected_row, 
+                                   selected_comp_list=selected_components, 
+                                   highlight_color=comp_color, axis=None), 
+                     width="stretch", hide_index=True)
+        
+        # Add buttons for each component for selection
+        st.markdown("#### Select by Row:")
+        # Limit the number of buttons to avoid UI clutter, show first 10 components
+        max_buttons = min(10, len(df))
+        cols = st.columns(max_buttons)
+        for i in range(max_buttons):
+            row = df.iloc[i]
+            comp_num = int(row['component'])
+            comp_class = row.get('classif', 'unknown')
+            button_color = color_mapping.get(comp_class, '#808080')
+            
+            with cols[i]:
+                if st.button(f"Select {comp_num}", key=f"select_comp_{comp_num}"):
+                    selected_token = f"ica_{comp_num:03d}"
+                    st.session_state["last_selection_source"] = "table"
+                    st.query_params["selected"] = selected_token
+                    st.query_params["selected_source"] = "table"
+                    st.rerun()
+        
+        # If user has selected more than 10 components, provide a way to select others
+        if len(df) > 10:
+            st.markdown("#### More Components:")
+            remaining_components = df.iloc[10:]
+            # Create a smaller selectbox for remaining components to avoid too many buttons
+            remaining_options = {f"Component {int(row['component'])} ({row.get('classif', 'unknown')})": int(row['component']) 
+                                for idx, row in remaining_components.iterrows()}
+            remaining_options_list = list(remaining_options.keys())
+            
+            if remaining_options_list:
+                selected_remaining = st.selectbox(
+                    "Select from remaining components", 
+                    options=[""] + remaining_options_list,
+                    format_func=lambda x: x if x else "Select...",
+                    key="remaining_components_selectbox"
+                )
+                
+                if selected_remaining:
+                    selected_comp = remaining_options[selected_remaining]
+                    selected_token = f"ica_{selected_comp:03d}"
+                    st.session_state["last_selection_source"] = "table"
+                    st.query_params["selected"] = selected_token
+                    st.query_params["selected_source"] = "table"
+                    st.rerun()
 
 
 if __name__ == "__main__":
