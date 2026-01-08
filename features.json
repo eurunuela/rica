@@ -286,14 +286,28 @@
     {
       "id": "display_brain_stat_map",
       "category": "visualization",
-      "description": "Display interactive 3D brain stat map using Niivue for selected ICA component",
+      "description": "Display interactive brain stat map mosaic using Niivue for selected ICA component",
       "steps": [
         "Load a tedana folder containing *stat-z_components.nii.gz",
         "Navigate to the 'ICA' tab",
-        "Verify brain viewer displays axial, sagittal, and coronal views in a row",
+        "Verify brain viewer displays 3 rows of slices (axial, sagittal, coronal) with 7 slices per row",
         "Verify warm/cool diverging colormap is applied (warm for positive, cool for negative)",
-        "Verify colormap range is set to 10% of max absolute value by default",
+        "Verify colormap range is set to 25% of max absolute value by default",
         "Select different components and verify brain map updates"
+      ],
+      "passes": true
+    },
+    {
+      "id": "ica_brain_map_position_slider",
+      "category": "interactivity",
+      "description": "Navigate through brain slices using position slider in ICA tab",
+      "steps": [
+        "Load a tedana folder containing NIfTI files",
+        "Navigate to the 'ICA' tab",
+        "Locate the Position slider below the brain viewer",
+        "Drag slider to navigate through brain slices (-40% to +40%)",
+        "Verify mosaic view updates in real-time as slider moves",
+        "Verify percentage label updates to show current position"
       ],
       "passes": true
     },
@@ -594,6 +608,35 @@
         "Verify Rho Rank plot shows horizontal rho elbow line and connecting line through points"
       ],
       "passes": true
+    },
+    {
+      "id": "display_external_regressor_correlations",
+      "category": "visualization",
+      "description": "Display external regressor correlation figure in QC tab when available",
+      "steps": [
+        "Load a tedana folder generated with external regressors (contains confound_correlations.svg)",
+        "Navigate to the 'QC' tab",
+        "Verify 'External Regressors' category tab appears",
+        "Click on 'External Regressors' category",
+        "Verify confound correlations figure is displayed",
+        "Verify the figure shows correlation matrix between external regressors and ICA components"
+      ],
+      "passes": true
+    },
+    {
+      "id": "interactive_external_regressor_heatmap",
+      "category": "visualization",
+      "description": "Display interactive correlation heatmap in ICA tab (blocked on tedana#1294)",
+      "steps": [
+        "Waiting for tedana to save correlation matrix data (issue #1294)",
+        "Once available: Load tedana folder with confound_correlations.json",
+        "Navigate to the 'ICA' tab",
+        "Verify correlation heatmap appears below the scatter plots",
+        "Hover over cells to see correlation values",
+        "Click cells to select corresponding component"
+      ],
+      "passes": false,
+      "blockedBy": "https://github.com/ME-ICA/tedana/issues/1294"
     }
   ]
 }

@@ -108,6 +108,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       let crossComponentMetrics = null;
       // QC NIfTI buffers
       const qcNiftiBuffers = {};
+      // External regressors correlation figure
+      let externalRegressorsFigure = null;
 
       // Process files via HTTP fetch
       for (const filepath of relevantFiles) {
@@ -123,14 +125,16 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
-          // SVG figures (carpet plots vs diagnostic figures)
+          // SVG figures (carpet plots vs diagnostic figures vs external regressors)
           if (filename.endsWith(".svg")) {
             const response = await fetch(`/${filepath}`);
             const blob = await response.blob();
             const dataUrl = await blobToDataURL(blob);
-            // Separate carpet plots from diagnostic figures
+            // Separate carpet plots, external regressors, and diagnostic figures
             if (filename.includes("carpet_")) {
               carpetFigures.push({ name: filename, img: dataUrl });
+            } else if (filename.includes("confound_correlations")) {
+              externalRegressorsFigure = dataUrl;
             } else {
               diagnosticFigures.push({ name: filename, img: dataUrl });
             }
@@ -245,6 +249,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         maskBuffer,
         crossComponentMetrics,
         qcNiftiBuffers,
+        externalRegressorsFigure,
       });
     },
     [onDataLoad, onLoadingStart]
@@ -313,6 +318,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       let crossComponentMetrics = null;
       // QC NIfTI buffers
       const qcNiftiBuffers = {};
+      // External regressors correlation figure
+      let externalRegressorsFigure = null;
 
       // Process all files in parallel using Promise.all
       const filePromises = files.map(async (file) => {
@@ -326,12 +333,14 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
-          // SVG figures (carpet plots vs diagnostic figures)
+          // SVG figures (carpet plots vs diagnostic figures vs external regressors)
           if (filename.endsWith(".svg")) {
             const dataUrl = await readFileAsDataURL(file);
-            // Separate carpet plots from diagnostic figures
+            // Separate carpet plots, external regressors, and diagnostic figures
             if (filename.includes("carpet_")) {
               carpetFigures.push({ name: filename, img: dataUrl });
+            } else if (filename.includes("confound_correlations")) {
+              externalRegressorsFigure = dataUrl;
             } else {
               diagnosticFigures.push({ name: filename, img: dataUrl });
             }
@@ -442,6 +451,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         maskBuffer,
         crossComponentMetrics,
         qcNiftiBuffers,
+        externalRegressorsFigure,
       });
     },
     [onDataLoad, onLoadingStart]
