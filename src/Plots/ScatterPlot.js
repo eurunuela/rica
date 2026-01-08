@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback } from "react";
 import { Group } from "@visx/group";
-import { Circle } from "@visx/shape";
+import { Circle, Line, LinePath } from "@visx/shape";
 import { scaleLinear } from "@visx/scale";
 import { AxisLeft, AxisBottom } from "@visx/axis";
 import { GridRows, GridColumns } from "@visx/grid";
@@ -33,6 +33,10 @@ function ScatterPlot({
   getX,
   getY,
   isDark = false,
+  hLine,              // Optional horizontal threshold line value
+  vLine,              // Optional vertical threshold line value
+  showDiagonal,       // Show x=y diagonal reference line
+  connectingLine,     // Array of {x, y} points for connecting line
 }) {
   // Theme colors
   const colors = {
@@ -44,6 +48,9 @@ function ScatterPlot({
     grid: isDark ? '#27272a' : '#e5e7eb',
     stroke: isDark ? '#27272a' : '#ffffff',
     selectedStroke: isDark ? '#fafafa' : '#1f2937',
+    refLine: isDark ? '#71717a' : '#9ca3af',          // Reference/threshold lines
+    diagonal: isDark ? '#52525b' : '#d1d5db',          // Diagonal x=y line
+    connectLine: isDark ? '#52525b' : '#6b7280',       // Connecting line for rank plots
   };
   const {
     tooltipData,
@@ -184,6 +191,61 @@ function ScatterPlot({
                 stroke={colors.grid}
                 strokeOpacity={0.5}
               />
+
+              {/* Diagonal x=y reference line */}
+              {showDiagonal && (() => {
+                // Calculate diagonal endpoints based on the intersection with chart bounds
+                const xDomain = xScale.domain();
+                const yDomain = yScale.domain();
+                const diagMin = Math.max(xDomain[0], yDomain[0]);
+                const diagMax = Math.min(xDomain[1], yDomain[1]);
+                return (
+                  <Line
+                    from={{ x: xScale(diagMin), y: yScale(diagMin) }}
+                    to={{ x: xScale(diagMax), y: yScale(diagMax) }}
+                    stroke={colors.diagonal}
+                    strokeWidth={1}
+                    strokeDasharray="4,4"
+                    strokeOpacity={0.8}
+                  />
+                );
+              })()}
+
+              {/* Horizontal threshold line (rho elbow) */}
+              {hLine !== undefined && hLine !== null && (
+                <Line
+                  from={{ x: 0, y: yScale(hLine) }}
+                  to={{ x: innerWidth, y: yScale(hLine) }}
+                  stroke={colors.refLine}
+                  strokeWidth={1.5}
+                  strokeDasharray="6,4"
+                  strokeOpacity={0.9}
+                />
+              )}
+
+              {/* Vertical threshold line (kappa elbow) */}
+              {vLine !== undefined && vLine !== null && (
+                <Line
+                  from={{ x: xScale(vLine), y: 0 }}
+                  to={{ x: xScale(vLine), y: innerHeight }}
+                  stroke={colors.refLine}
+                  strokeWidth={1.5}
+                  strokeDasharray="6,4"
+                  strokeOpacity={0.9}
+                />
+              )}
+
+              {/* Connecting line for rank plots */}
+              {connectingLine && connectingLine.length > 0 && (
+                <LinePath
+                  data={connectingLine}
+                  x={(d) => xScale(d.x)}
+                  y={(d) => yScale(d.y)}
+                  stroke={colors.connectLine}
+                  strokeWidth={1.5}
+                  strokeOpacity={0.7}
+                />
+              )}
 
               {/* Axes */}
               <AxisBottom

@@ -2,7 +2,7 @@
   "projectName": "rica",
   "version": "2.0.0",
   "description": "React-based interactive visualization tool for multi-echo fMRI ICA component analysis",
-  "lastUpdated": "2025-12-15",
+  "lastUpdated": "2026-01-07",
   "modernizationNotes": "v2.0.0 - Upgraded to React 18, functional components, removed 5s loading delay, added progress indicator, Notion-style popups",
   "features": [
     {
@@ -510,6 +510,88 @@
         "Verify selected segment stays in its original position",
         "Verify selected segment appears on top of neighbors",
         "Verify selection is indicated by dark border and shadow"
+      ],
+      "passes": true
+    },
+    {
+      "id": "display_qc_brain_maps",
+      "category": "visualization",
+      "description": "Display interactive QC brain maps (T2*, S0, RMSE) using Niivue mosaic view",
+      "steps": [
+        "Load a tedana folder containing T2starmap.nii, S0map.nii, rmse_statmap.nii",
+        "Navigate to the 'QC' tab",
+        "Verify 'Brain Maps' category is selected by default",
+        "Verify T2*, S0, and RMSE map tabs are available",
+        "Verify brain map displays 3 rows (axial, sagittal, coronal) with 7 slices each",
+        "Click between T2*, S0, and RMSE tabs to switch maps"
+      ],
+      "passes": true
+    },
+    {
+      "id": "qc_brain_map_controls",
+      "category": "interactivity",
+      "description": "Adjust QC brain map display using position and contrast sliders",
+      "steps": [
+        "Navigate to the 'QC' tab with Brain Maps selected",
+        "Locate the Position slider and drag to navigate through brain slices",
+        "Verify mosaic updates to show different slice positions",
+        "Locate the Contrast slider and drag to adjust colormap intensity",
+        "Verify brain map contrast changes in real-time",
+        "Switch to a different map and verify contrast resets to 50%"
+      ],
+      "passes": true
+    },
+    {
+      "id": "qc_rmse_colormap",
+      "category": "visualization",
+      "description": "RMSE map uses inverted hot colormap with black background outside brain",
+      "steps": [
+        "Navigate to the 'QC' tab",
+        "Select the RMSE Map tab",
+        "Verify hot colormap is applied (black to red to yellow to white)",
+        "Verify areas outside the brain appear black due to colormap inversion",
+        "Verify high RMSE values inside brain appear as hot colors"
+      ],
+      "passes": true
+    },
+    {
+      "id": "display_qc_histograms",
+      "category": "visualization",
+      "description": "Display histogram SVG figures in QC tab",
+      "steps": [
+        "Load a tedana folder containing histogram SVG files",
+        "Navigate to the 'QC' tab",
+        "Click on 'Histograms' category tab",
+        "Verify histogram figures are displayed",
+        "If multiple histograms exist, verify sub-selector tabs appear",
+        "Click between histogram tabs to switch displayed figure"
+      ],
+      "passes": true
+    },
+    {
+      "id": "display_qc_time_series",
+      "category": "visualization",
+      "description": "Display time series SVG figures in QC tab",
+      "steps": [
+        "Load a tedana folder containing time series SVG files",
+        "Navigate to the 'QC' tab",
+        "Click on 'Time Series' category tab",
+        "Verify time series figures are displayed",
+        "If multiple figures exist, verify sub-selector tabs appear"
+      ],
+      "passes": true
+    },
+    {
+      "id": "scatter_plot_reference_lines",
+      "category": "visualization",
+      "description": "Display elbow threshold lines and reference lines on scatter plots",
+      "steps": [
+        "Load a tedana folder containing *_desc-ICACrossComponent_metrics.json",
+        "Navigate to the 'ICA' tab",
+        "Verify Kappa vs Rho plot shows vertical kappa elbow line and horizontal rho elbow line",
+        "Verify Kappa vs Rho plot shows diagonal x=y reference line",
+        "Verify Kappa Rank plot shows horizontal kappa elbow line and connecting line through points",
+        "Verify Rho Rank plot shows horizontal rho elbow line and connecting line through points"
       ],
       "passes": true
     }

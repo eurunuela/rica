@@ -28,7 +28,7 @@ const getColors = (isDark) => ({
 });
 
 
-function Plots({ componentData, componentFigures, originalData, mixingMatrix, niftiBuffer, maskBuffer, isDark = false }) {
+function Plots({ componentData, componentFigures, originalData, mixingMatrix, niftiBuffer, maskBuffer, crossComponentMetrics, isDark = false }) {
   const [processedData, setProcessedData] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedClassification, setSelectedClassification] = useState("accepted");
@@ -37,6 +37,25 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
 
   // Check if we have the new interactive visualization data
   const hasInteractiveViews = mixingMatrix?.data && niftiBuffer;
+
+  // Extract elbow thresholds from cross-component metrics (if available)
+  const kappaElbow = crossComponentMetrics?.kappa_allcomps_elbow;
+  const rhoElbow = crossComponentMetrics?.rho_allcomps_elbow;
+
+  // Compute connecting line data for rank plots (sorted by rank)
+  const kappaRankLine = useMemo(() => {
+    if (!processedData.length) return [];
+    // Sort by kappa rank and create line data
+    const sorted = [...processedData].sort((a, b) => a.kappaRank - b.kappaRank);
+    return sorted.map((d) => ({ x: d.kappaRank, y: d.kappa }));
+  }, [processedData]);
+
+  const rhoRankLine = useMemo(() => {
+    if (!processedData.length) return [];
+    // Sort by rho rank and create line data
+    const sorted = [...processedData].sort((a, b) => a.rhoRank - b.rhoRank);
+    return sorted.map((d) => ({ x: d.rhoRank, y: d.rho }));
+  }, [processedData]);
 
   // Get current component's time series from mixing matrix
   const currentTimeSeries = useMemo(() => {
@@ -338,6 +357,9 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
                   getX={(d) => d.kappa}
                   getY={(d) => d.rho}
                   isDark={isDark}
+                  vLine={kappaElbow}
+                  hLine={rhoElbow}
+                  showDiagonal={true}
                 />
 
                 {/* Variance Pie Chart */}
@@ -356,7 +378,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
                   data={processedData}
                   width={CHART_WIDTH}
                   height={CHART_HEIGHT}
-                  title="Rho vs Rank"
+                  title="Rho Rank"
                   xLabel="Rank"
                   yLabel="Rho"
                   selectedIndex={selectedIndex}
@@ -364,6 +386,8 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
                   getX={(d) => d.rhoRank}
                   getY={(d) => d.rho}
                   isDark={isDark}
+                  hLine={rhoElbow}
+                  connectingLine={rhoRankLine}
                 />
 
                 {/* Kappa vs Rank scatter plot */}
@@ -371,7 +395,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
                   data={processedData}
                   width={CHART_WIDTH}
                   height={CHART_HEIGHT}
-                  title="Kappa vs Rank"
+                  title="Kappa Rank"
                   xLabel="Rank"
                   yLabel="Kappa"
                   selectedIndex={selectedIndex}
@@ -379,6 +403,8 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
                   getX={(d) => d.kappaRank}
                   getY={(d) => d.kappa}
                   isDark={isDark}
+                  hLine={kappaElbow}
+                  connectingLine={kappaRankLine}
                 />
               </div>
             </div>
