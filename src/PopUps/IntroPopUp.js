@@ -85,13 +85,19 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           (f.startsWith("tedana_20") && f.endsWith(".tsv")) ||
           (f.includes("_mixing.tsv") && !f.includes("PCA")) ||
           (f.includes("stat-z_components.nii.gz") && f.includes("ICA")) ||
-          f.includes("_mask.nii")
+          f.includes("_mask.nii") ||
+          f.includes("CrossComponent_metrics.json") ||
+          // QC NIfTI files
+          f.includes("T2starmap.nii") ||
+          f.includes("S0map.nii") ||
+          f.includes("rmse_statmap.nii")
       );
 
       setLoadingProgress({ current: 0, total: relevantFiles.length });
 
       const compFigures = [];
       const carpetFigures = [];
+      const diagnosticFigures = [];
       let info = "";
       let components = [];
       let originalData = [];
@@ -99,6 +105,9 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       let mixingMatrix = null;
       let niftiBuffer = null;
       let maskBuffer = null;
+      let crossComponentMetrics = null;
+      // QC NIfTI buffers
+      const qcNiftiBuffers = {};
 
       // Process files via HTTP fetch
       for (const filepath of relevantFiles) {
@@ -114,12 +123,17 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
-          // Carpet plots (SVG)
+          // SVG figures (carpet plots vs diagnostic figures)
           if (filename.endsWith(".svg")) {
             const response = await fetch(`/${filepath}`);
             const blob = await response.blob();
             const dataUrl = await blobToDataURL(blob);
-            carpetFigures.push({ name: filename, img: dataUrl });
+            // Separate carpet plots from diagnostic figures
+            if (filename.includes("carpet_")) {
+              carpetFigures.push({ name: filename, img: dataUrl });
+            } else {
+              diagnosticFigures.push({ name: filename, img: dataUrl });
+            }
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
@@ -183,6 +197,30 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             maskBuffer = await response.arrayBuffer();
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
+
+          // Cross-component metrics (for elbow thresholds)
+          if (filename.includes("CrossComponent_metrics.json")) {
+            const response = await fetch(`/${filepath}`);
+            crossComponentMetrics = await response.json();
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
+
+          // QC NIfTI files (T2*, S0, RMSE)
+          if (filename.includes("T2starmap.nii")) {
+            const response = await fetch(`/${filepath}`);
+            qcNiftiBuffers.t2star = await response.arrayBuffer();
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
+          if (filename.includes("S0map.nii") && !filename.includes("limited")) {
+            const response = await fetch(`/${filepath}`);
+            qcNiftiBuffers.s0 = await response.arrayBuffer();
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
+          if (filename.includes("rmse_statmap.nii")) {
+            const response = await fetch(`/${filepath}`);
+            qcNiftiBuffers.rmse = await response.arrayBuffer();
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
         } catch (error) {
           console.error(`Error fetching file ${filepath}:`, error);
         }
@@ -191,11 +229,13 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       // Sort component figures by name
       compFigures.sort((a, b) => a.name.localeCompare(b.name));
       carpetFigures.sort((a, b) => a.name.localeCompare(b.name));
+      diagnosticFigures.sort((a, b) => a.name.localeCompare(b.name));
 
       // Pass all data to parent
       onDataLoad({
         componentFigures: compFigures,
         carpetFigures,
+        diagnosticFigures,
         components: [components],
         info,
         originalData: [originalData],
@@ -203,6 +243,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         mixingMatrix,
         niftiBuffer,
         maskBuffer,
+        crossComponentMetrics,
+        qcNiftiBuffers,
       });
     },
     [onDataLoad, onLoadingStart]
@@ -248,13 +290,19 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           // New files for Niivue integration
           (f.name.includes("_mixing.tsv") && !f.name.includes("PCA")) ||
           (f.name.includes("stat-z_components.nii.gz") && f.name.includes("ICA")) ||
-          f.name.includes("_mask.nii")
+          f.name.includes("_mask.nii") ||
+          f.name.includes("CrossComponent_metrics.json") ||
+          // QC NIfTI files
+          f.name.includes("T2starmap.nii") ||
+          f.name.includes("S0map.nii") ||
+          f.name.includes("rmse_statmap.nii")
       ).length;
 
       setLoadingProgress({ current: 0, total: totalFiles });
 
       const compFigures = [];
       const carpetFigures = [];
+      const diagnosticFigures = [];
       let info = "";
       let components = [];
       let originalData = [];
@@ -262,6 +310,9 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       let mixingMatrix = null;
       let niftiBuffer = null;
       let maskBuffer = null;
+      let crossComponentMetrics = null;
+      // QC NIfTI buffers
+      const qcNiftiBuffers = {};
 
       // Process all files in parallel using Promise.all
       const filePromises = files.map(async (file) => {
@@ -275,10 +326,15 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
-          // Carpet plots (SVG)
+          // SVG figures (carpet plots vs diagnostic figures)
           if (filename.endsWith(".svg")) {
             const dataUrl = await readFileAsDataURL(file);
-            carpetFigures.push({ name: filename, img: dataUrl });
+            // Separate carpet plots from diagnostic figures
+            if (filename.includes("carpet_")) {
+              carpetFigures.push({ name: filename, img: dataUrl });
+            } else {
+              diagnosticFigures.push({ name: filename, img: dataUrl });
+            }
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
@@ -337,6 +393,27 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             maskBuffer = await readFileAsArrayBuffer(file);
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
+
+          // Cross-component metrics (for elbow thresholds)
+          if (filename.includes("CrossComponent_metrics.json")) {
+            const text = await readFileAsText(file);
+            crossComponentMetrics = JSON.parse(text);
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
+
+          // QC NIfTI files (T2*, S0, RMSE)
+          if (filename.includes("T2starmap.nii")) {
+            qcNiftiBuffers.t2star = await readFileAsArrayBuffer(file);
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
+          if (filename.includes("S0map.nii") && !filename.includes("limited")) {
+            qcNiftiBuffers.s0 = await readFileAsArrayBuffer(file);
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
+          if (filename.includes("rmse_statmap.nii")) {
+            qcNiftiBuffers.rmse = await readFileAsArrayBuffer(file);
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
         } catch (error) {
           console.error(`Error reading file ${filename}:`, error);
         }
@@ -348,11 +425,13 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       // Sort component figures by name for consistent ordering
       compFigures.sort((a, b) => a.name.localeCompare(b.name));
       carpetFigures.sort((a, b) => a.name.localeCompare(b.name));
+      diagnosticFigures.sort((a, b) => a.name.localeCompare(b.name));
 
       // Pass all data to parent at once - no delays!
       onDataLoad({
         componentFigures: compFigures,
         carpetFigures,
+        diagnosticFigures,
         components: [components],
         info,
         originalData: [originalData],
@@ -361,6 +440,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         mixingMatrix,
         niftiBuffer,
         maskBuffer,
+        crossComponentMetrics,
+        qcNiftiBuffers,
       });
     },
     [onDataLoad, onLoadingStart]

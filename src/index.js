@@ -20,6 +20,7 @@ import {
   faQuestion,
   faSun,
   faMoon,
+  faHeartPulse,
 } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
@@ -27,8 +28,9 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import Plots from "./Plots/Plots";
 import Carpets from "./Carpets/Carpets";
 import Info from "./Info/Info";
+import Diagnostics from "./Diagnostics/Diagnostics";
 
-library.add(faInfoCircle, faLayerGroup, faChartPie, faPlus, faQuestion, faSun, faMoon);
+library.add(faInfoCircle, faLayerGroup, faChartPie, faPlus, faQuestion, faSun, faMoon, faHeartPulse);
 
 // Theme context
 const ThemeContext = React.createContext();
@@ -41,6 +43,7 @@ function App() {
   const [componentData, setComponentData] = useState([]);
   const [componentFigures, setComponentFigures] = useState([]);
   const [carpetFigures, setCarpetFigures] = useState([]);
+  const [diagnosticFigures, setDiagnosticFigures] = useState([]);
   const [info, setInfo] = useState([]);
   const [showIntroPopup, setShowIntroPopup] = useState(true);
   const [showAboutPopup, setShowAboutPopup] = useState(false);
@@ -52,6 +55,8 @@ function App() {
   const [mixingMatrix, setMixingMatrix] = useState(null);
   const [niftiBuffer, setNiftiBuffer] = useState(null);
   const [maskBuffer, setMaskBuffer] = useState(null);
+  const [crossComponentMetrics, setCrossComponentMetrics] = useState(null);
+  const [qcNiftiBuffers, setQcNiftiBuffers] = useState({});
   // Theme state
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('rica-theme');
@@ -128,6 +133,7 @@ function App() {
       // Set all state at once - no nested callbacks or delays
       setComponentFigures(data.componentFigures);
       setCarpetFigures(data.carpetFigures);
+      setDiagnosticFigures(data.diagnosticFigures || []);
       setComponentData(data.components);
       setInfo([data.info, data.dirPath]);
       setOriginalData(data.originalData);
@@ -135,6 +141,8 @@ function App() {
       setMixingMatrix(data.mixingMatrix);
       setNiftiBuffer(data.niftiBuffer);
       setMaskBuffer(data.maskBuffer);
+      setCrossComponentMetrics(data.crossComponentMetrics);
+      setQcNiftiBuffers(data.qcNiftiBuffers || {});
       setIsLoading(false);
       toggleIntroPopup();
     },
@@ -232,6 +240,13 @@ function App() {
                       style={{ marginRight: "6px", fontSize: "13px", opacity: 0.7 }}
                     />
                     <span>Carpets</span>
+                  </AnimatedTab>
+                  <AnimatedTab index={3} isDark={isDark}>
+                    <FontAwesomeIcon
+                      icon={["fas", "heart-pulse"]}
+                      style={{ marginRight: "6px", fontSize: "13px", opacity: 0.7 }}
+                    />
+                    <span>QC</span>
                   </AnimatedTab>
                 </TabList>
 
@@ -340,11 +355,20 @@ function App() {
                     mixingMatrix={mixingMatrix}
                     niftiBuffer={niftiBuffer}
                     maskBuffer={maskBuffer}
+                    crossComponentMetrics={crossComponentMetrics}
                     isDark={isDark}
                   />
                 </TabPanel>
                 <TabPanel index={2}>
                   <Carpets images={carpetFigures} isDark={isDark} />
+                </TabPanel>
+                <TabPanel index={3}>
+                  <Diagnostics
+                    images={diagnosticFigures}
+                    qcNiftiBuffers={qcNiftiBuffers}
+                    maskBuffer={maskBuffer}
+                    isDark={isDark}
+                  />
                 </TabPanel>
               </TabPanels>
             </AnimatedTabs>

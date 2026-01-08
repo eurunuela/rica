@@ -32,6 +32,11 @@ RICA_FILE_PATTERNS = [
     "comp_",
     ".svg",
     "tedana_",
+    "CrossComponent_metrics.json",
+    # QC NIfTI files
+    "T2starmap.nii",
+    "S0map.nii",
+    "rmse_statmap.nii",
 ]
 
 # Ensure proper MIME types

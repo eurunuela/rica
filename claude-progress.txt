@@ -997,6 +997,299 @@ python rica_server.py
 
 ---
 
+## Session 8 - Tedana Report Parity: Reference Lines (2026-01-07)
+
+### Goals
+- Analyze tedana static HTML report to identify missing features in Rica
+- Implement missing visualization features to match tedana reports
+- Add elbow threshold lines and reference lines like tedana's Bokeh plots
+
+### Analysis
+Compared Rica's current implementation with tedana's `tedana_report.html`:
+
+**Rica already had:**
+- Kappa vs Rho scatter plot
+- Kappa Rank scatter plot
+- Rho Rank scatter plot
+- Variance Explained pie chart
+- Component viewer (PNG or Niivue + time series + FFT)
+- Carpet plots (in Carpets tab)
+
+**Missing from tedana reports (now added):**
+1. Kappa elbow threshold line (vertical on kappa/rho, horizontal on kappa rank)
+2. Rho elbow threshold line (horizontal on kappa/rho, horizontal on rho rank)
+3. Diagonal x=y reference line on kappa/rho plot
+4. Connecting line through sorted values on rank plots
+
+### Changes Made
+
+#### Data Loading
+1. **src/PopUps/IntroPopUp.js**:
+   - Added pattern matching for `*_desc-ICACrossComponent_metrics.json`
+   - Load and parse cross-component metrics JSON file
+   - Pass `crossComponentMetrics` to parent in both server and folder upload modes
+
+2. **src/index.js**:
+   - Added `crossComponentMetrics` state
+   - Pass to Plots component
+
+3. **scripts/rica_server.py**:
+   - Added `CrossComponent_metrics.json` to `RICA_FILE_PATTERNS`
+
+#### Visualization Updates
+4. **src/Plots/ScatterPlot.js**:
+   - Added new props: `hLine`, `vLine`, `showDiagonal`, `connectingLine`
+   - Added theme colors for reference lines (`refLine`, `diagonal`, `connectLine`)
+   - Render horizontal threshold line (dashed) when `hLine` provided
+   - Render vertical threshold line (dashed) when `vLine` provided
+   - Render x=y diagonal reference line when `showDiagonal` is true
+   - Render connecting line through data points via `LinePath` when `connectingLine` provided
+   - Imported `Line` and `LinePath` from `@visx/shape`
+
+5. **src/Plots/Plots.js**:
+   - Added `crossComponentMetrics` prop
+   - Extract `kappaElbow` and `rhoElbow` from cross-component metrics
+   - Compute `kappaRankLine` and `rhoRankLine` (memoized sorted arrays)
+   - Pass elbow lines, diagonal, and connecting lines to ScatterPlot components
+   - Renamed "Rho vs Rank" → "Rho Rank", "Kappa vs Rank" → "Kappa Rank"
+
+### Technical Details
+
+**Elbow values from tedana:**
+```json
+{
+  "kappa_allcomps_elbow": 32.26,
+  "rho_allcomps_elbow": 12.78
+}
+```
+
+**Reference lines in ScatterPlot:**
+- Horizontal line: Drawn at `yScale(hLine)` across full width
+- Vertical line: Drawn at `xScale(vLine)` across full height
+- Diagonal: Calculated from intersection of x=y with chart domain bounds
+- Connecting line: `LinePath` through sorted rank data points
+
+**Note:** Elbow lines only appear if tedana provides the cross-component metrics JSON.
+If the file is missing, the plots still work but without threshold lines.
+
+### Files Modified
+- `src/PopUps/IntroPopUp.js` - Load cross-component metrics
+- `src/index.js` - Add state and pass props
+- `src/Plots/Plots.js` - Extract elbows, compute lines, pass props
+- `src/Plots/ScatterPlot.js` - Render reference lines
+- `scripts/rica_server.py` - Add file pattern
+
+### Build Status
+- Build completed successfully (+600 B to main bundle)
+
+### Next Steps
+- In a future session, brainstorm modern webapp design improvements
+- Consider adding PCA criterion curves if available
+- ~~Consider adding T2*/S0/RMSE visualizations (conditional on data availability)~~ Done in Session 8b
+
+---
+
+## Session 8b - QC Tab for Diagnostic Figures (2026-01-07)
+
+### Goals
+- Add a new tab to display diagnostic SVG figures from tedana output
+- Organize figures by category (T2*/S0, RMSE, Masks)
+
+### Changes Made
+
+#### Data Loading
+1. **src/PopUps/IntroPopUp.js**:
+   - Added `diagnosticFigures` array to store non-carpet SVG files
+   - Modified SVG loading to separate `carpet_*` files from diagnostic figures
+   - Pass `diagnosticFigures` to parent in both server and folder upload modes
+
+2. **src/index.js**:
+   - Added `diagnosticFigures` state
+   - Added `faHeartPulse` icon import for QC tab
+   - Imported `Diagnostics` component
+   - Added QC tab (index 3) with heart-pulse icon
+   - Added TabPanel for Diagnostics component
+
+#### New Component
+3. **src/Diagnostics/Diagnostics.js** (new file):
+   - Groups figures by category: "T2* / S0 Maps", "RMSE Quality", "Masks", "Other"
+   - Category tabs to switch between figure groups
+   - Sub-selector for multiple figures within a category
+   - Clean label extraction from filenames
+   - Theme-aware styling (light/dark mode support)
+
+### Figures Now Available in QC Tab
+| Category | Figures |
+|----------|---------|
+| T2* / S0 Maps | t2star_brain, t2star_histogram, s0_brain, s0_histogram |
+| RMSE Quality | rmse_brain, rmse_timeseries |
+| Masks | adaptive_mask |
+
+### Technical Details
+- Figures are automatically categorized based on filename patterns
+- Empty categories are hidden
+- First figure in first non-empty category is auto-selected
+- SVG images displayed with responsive sizing
+
+### Files Modified
+- `src/PopUps/IntroPopUp.js` - Separate carpet/diagnostic SVGs
+- `src/index.js` - Add state, tab, and component
+- `src/Diagnostics/Diagnostics.js` - New component (created)
+
+### Build Status
+- Development server compiles successfully
+- No blocking errors
+
+---
+
+## Session 8c - Niivue Brain Maps in QC Tab (2026-01-07)
+
+### Goals
+- Replace static SVG brain figures with interactive Niivue viewers
+- Display mosaic view with 5-6 slices per orientation (axial, sagittal, coronal) in rows
+- Add colorbar and saturation slider for brain maps
+- Make number of slices responsive to screen width
+
+### Changes Made
+
+#### Data Loading
+1. **src/PopUps/IntroPopUp.js**:
+   - Added patterns for QC NIfTI files: `T2starmap.nii`, `S0map.nii`, `rmse_statmap.nii`
+   - Created `qcNiftiBuffers` object to store NIfTI ArrayBuffers by type
+   - Pass `qcNiftiBuffers` to parent component
+
+2. **src/index.js**:
+   - Added `qcNiftiBuffers` state
+   - Pass to Diagnostics component
+
+3. **scripts/rica_server.py**:
+   - Added file patterns: `T2starmap.nii`, `S0map.nii`, `rmse_statmap.nii`
+
+#### New Component
+4. **src/Diagnostics/NiivueMosaic.js** (new file):
+   - Niivue-based brain viewer with mosaic display
+   - Shows multiple slices per orientation (axial, sagittal, coronal in rows)
+   - Dynamic slice count based on container width (5-8 slices, min 5)
+   - Colorbar included via Niivue's `showColorbar: true`
+   - Saturation slider (10%-100%) to adjust colormap range
+   - Theme-aware styling (light/dark mode support)
+   - Appropriate colormaps per map type:
+     - T2*/S0: `gray` colormap
+     - RMSE: `hot` colormap
+     - Mask: `blue` colormap
+   - Responsive to window resize via ResizeObserver
+   - Loading and error states
+
+#### Updated Component
+5. **src/Diagnostics/Diagnostics.js**:
+   - Added "Brain Maps" category with T2*, S0, RMSE map tabs
+   - Brain maps use NiivueMosaic component instead of SVG
+   - Non-brain SVGs (histograms, timeseries) still use image display
+   - Increased height to 600px for 3 rows of brain slices
+
+### Technical Details
+
+**Mosaic string generation:**
+```javascript
+function generateMosaicString(numSlices) {
+  // Evenly spaced from 15% to 85% through volume
+  const positions = [];
+  for (let i = 0; i < numSlices; i++) {
+    const pos = 0.15 + (i / (numSlices - 1)) * 0.7;
+    positions.push(pos.toFixed(2));
+  }
+  // Format: "A pos1 pos2...;S pos1 pos2...;C pos1 pos2..."
+  return `A ${positions.join(" ")};S ${positions.join(" ")};C ${positions.join(" ")}`;
+}
+```
+
+**Dynamic slice count:**
+- Container width / 90px to estimate comfortable slice width
+- Minimum 5 slices, maximum 8 slices
+- Updates on window resize via ResizeObserver
+
+**Saturation control:**
+- Stores original `cal_max` value on load
+- Adjusts `cal_max` based on slider: `originalMax * saturation`
+- Calls `updateGLVolume()` and `drawScene()` to refresh
+
+### Files Modified
+- `src/PopUps/IntroPopUp.js` - Load QC NIfTI files
+- `src/index.js` - Add state and pass props
+- `src/Diagnostics/Diagnostics.js` - Use NiivueMosaic for brain maps
+- `src/Diagnostics/NiivueMosaic.js` - New component (created)
+- `scripts/rica_server.py` - Add file patterns
+
+### Build Status
+- Development server compiles successfully
+
+### Session 8c Update - Interactive Navigation
+
+Added position slider to navigate through the brain:
+- **Position slider**: Adjusts which slices are shown (25%-75% range)
+- Slices spread across 50% of volume, centered on position
+- Mosaic updates in real-time as slider moves
+- Each orientation (axial, sagittal, coronal) displayed in separate rows
+
+**Mosaic layout:**
+- Row 1: Axial slices (5-7 slices)
+- Row 2: Sagittal slices (5-7 slices)
+- Row 3: Coronal slices (5-7 slices)
+
+**Controls:**
+- Position slider: Navigate through brain (default 50%)
+- Saturation slider: Adjust colormap intensity (default 100%)
+
+---
+
+## Session 8d - QC Brain Map Sizing and Polish (2026-01-07)
+
+### Goals
+- Fix brain slices appearing too small in QC tab
+- Add proper mask support to hide areas outside the brain
+- Invert hot colormap for RMSE to make background black
+- Reset contrast to 50% when switching maps
+
+### Changes Made
+
+#### Diagnostics.js
+- Removed maxWidth constraint, now uses full width for better brain visibility
+- Container uses `flex: 1` and `minHeight: 500px` to fill available space
+- Pass `maskBuffer` to NiivueMosaic for brain masking
+
+#### NiivueMosaic.js
+- Fixed at 7 slices per row for good visibility
+- Canvas uses `flex: 1` with `minHeight: 400px` to fill parent container
+- Container has `height: 100%` and `flex: 1` for proper sizing
+- Added `maskBuffer` prop for brain masking (attempted modulation approach)
+- Added `getGamma()` function for map-specific gamma values
+- Added `colormapInvert` for RMSE maps - inverts hot colormap so high values (outside brain) appear black
+- Added `useEffect` to reset contrast to 50% when `mapType` changes
+- Calls `updateGLVolume()` and `drawScene()` after setting colormap properties
+
+#### Colormap Configuration
+- T2*/S0: `gray` colormap, gamma 1.0
+- RMSE: `hot` colormap with `colormapInvert: true`, gamma 1.5
+- Mask: `blue` colormap
+
+### Technical Details
+```javascript
+// Invert colormap for RMSE so high values are black (outside brain)
+if (isRmse) {
+  vol.colormapInvert = true;
+}
+
+// Update the volume rendering
+nv.updateGLVolume();
+nv.drawScene();
+```
+
+### Files Modified
+- `src/Diagnostics/Diagnostics.js` - Container sizing, mask prop
+- `src/Diagnostics/NiivueMosaic.js` - Sizing, colormap inversion, contrast reset
+
+---
+
 ## Template for Future Sessions
 
 ```
