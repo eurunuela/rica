@@ -57,6 +57,7 @@ function App() {
   const [maskBuffer, setMaskBuffer] = useState(null);
   const [crossComponentMetrics, setCrossComponentMetrics] = useState(null);
   const [qcNiftiBuffers, setQcNiftiBuffers] = useState({});
+  const [externalRegressorsFigure, setExternalRegressorsFigure] = useState(null);
   // Theme state
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('rica-theme');
@@ -143,6 +144,7 @@ function App() {
       setMaskBuffer(data.maskBuffer);
       setCrossComponentMetrics(data.crossComponentMetrics);
       setQcNiftiBuffers(data.qcNiftiBuffers || {});
+      setExternalRegressorsFigure(data.externalRegressorsFigure);
       setIsLoading(false);
       toggleIntroPopup();
     },
@@ -356,6 +358,7 @@ function App() {
                     niftiBuffer={niftiBuffer}
                     maskBuffer={maskBuffer}
                     crossComponentMetrics={crossComponentMetrics}
+                    externalRegressorsFigure={externalRegressorsFigure}
                     isDark={isDark}
                   />
                 </TabPanel>

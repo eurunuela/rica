@@ -23,8 +23,8 @@ function groupFigures(figures) {
 
   figures.forEach((fig) => {
     const name = fig.name.toLowerCase();
-    // Skip brain figures (they'll use Niivue)
-    if (name.includes("_brain.svg") || name.includes("_mask.svg")) {
+    // Skip brain figures (Niivue) and confound correlations (shown in ICA tab)
+    if (name.includes("_brain.svg") || name.includes("_mask.svg") || name.includes("confound_correlations")) {
       return;
     }
     if (name.includes("histogram")) {

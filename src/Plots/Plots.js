@@ -28,7 +28,7 @@ const getColors = (isDark) => ({
 });
 
 
-function Plots({ componentData, componentFigures, originalData, mixingMatrix, niftiBuffer, maskBuffer, crossComponentMetrics, isDark = false }) {
+function Plots({ componentData, componentFigures, originalData, mixingMatrix, niftiBuffer, maskBuffer, crossComponentMetrics, externalRegressorsFigure, isDark = false }) {
   const [processedData, setProcessedData] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedClassification, setSelectedClassification] = useState("accepted");
@@ -511,6 +511,36 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
         classifications={processedData.map((d) => d.classification)}
         isDark={isDark}
       />
+
+      {/* External Regressors Correlation Figure */}
+      {externalRegressorsFigure && (
+        <div style={{
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '24px 16px',
+          marginTop: '16px',
+        }}>
+          <h3 style={{
+            fontSize: '16px',
+            fontWeight: 600,
+            color: 'var(--text-primary)',
+            marginBottom: '16px',
+          }}>
+            External Regressor Correlations
+          </h3>
+          <img
+            src={externalRegressorsFigure}
+            alt="External Regressor Correlations"
+            style={{
+              maxWidth: '100%',
+              height: 'auto',
+              borderRadius: '8px',
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
