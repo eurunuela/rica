@@ -2,7 +2,7 @@
   "projectName": "rica",
   "version": "2.0.0",
   "description": "React-based interactive visualization tool for multi-echo fMRI ICA component analysis",
-  "lastUpdated": "2026-01-07",
+  "lastUpdated": "2026-01-09",
   "modernizationNotes": "v2.0.0 - Upgraded to React 18, functional components, removed 5s loading delay, added progress indicator, Notion-style popups",
   "features": [
     {
@@ -626,17 +626,19 @@
     {
       "id": "interactive_external_regressor_heatmap",
       "category": "visualization",
-      "description": "Display interactive correlation heatmap in ICA tab (blocked on tedana#1294)",
+      "description": "Display interactive correlation heatmap in ICA tab for external regressors",
       "steps": [
-        "Waiting for tedana to save correlation matrix data (issue #1294)",
-        "Once available: Load tedana folder with confound_correlations.json",
+        "Load tedana folder generated with external regressors (tedana PR #1297+)",
         "Navigate to the 'ICA' tab",
-        "Verify correlation heatmap appears below the scatter plots",
-        "Hover over cells to see correlation values",
-        "Click cells to select corresponding component"
+        "Verify correlation heatmap appears below the component table",
+        "Verify heatmap shows components (rows) vs external regressors (columns)",
+        "Verify diverging color scale: blue (negative) -> white (zero) -> red (positive)",
+        "Verify colorbar is positioned to the right of the heatmap",
+        "Hover over cells to see correlation values in tooltip",
+        "Click cells to select corresponding component (syncs with all charts)",
+        "Falls back to static SVG if correlation columns not in metrics TSV"
       ],
-      "passes": false,
-      "blockedBy": "https://github.com/ME-ICA/tedana/issues/1294"
+      "passes": true
     }
   ]
 }

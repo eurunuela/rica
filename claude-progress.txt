@@ -1445,6 +1445,104 @@ Rather than having Rica re-compute correlations (which requires users to copy th
 
 ---
 
+## Session 11 - Interactive External Regressor Correlation Heatmap (2026-01-09)
+
+### Goals
+- Implement interactive heatmap for external regressor correlations
+- Use new tedana feature from PR #1297 that saves correlation data in metrics TSV
+
+### Background
+- GitHub Issue #1294 requested tedana save correlation data alongside SVG
+- Tedana PR #1297 implemented this by adding columns like `external regressor correlation Mot_X` directly to the metrics TSV file
+- Rica can now display an interactive heatmap without recomputing correlations
+
+### Changes Made
+
+#### New Component
+1. **src/Plots/CorrelationHeatmap.js** (new file):
+   - visx-based interactive heatmap visualization
+   - Rows: ICA components (y-axis)
+   - Columns: External regressors (x-axis with rotated labels)
+   - Diverging color scale: blue (negative) → white (zero) → red (positive)
+   - Click on cell to select component (syncs with all other plots)
+   - Hover tooltips showing component name, regressor name, and correlation value
+   - Selected row highlighted with border
+   - Color legend bar on right side (-1 to 1)
+   - Theme-aware (light/dark mode support)
+   - Dynamic sizing based on number of components and regressors
+
+#### Updated Files
+2. **src/Plots/Plots.js**:
+   - Import CorrelationHeatmap component
+   - Added `externalRegressorColumns` useMemo to extract columns containing "external regressor correlation"
+   - Added `hasExternalRegressorData` flag to check if correlation data exists
+   - Conditional rendering: interactive heatmap when data exists, fallback to static SVG otherwise
+   - Heatmap syncs with component selection via `handlePointClick`
+
+### Technical Details
+
+**Column Detection:**
+```javascript
+const externalRegressorColumns = useMemo(() => {
+  if (!componentData?.[0]?.length) return [];
+  const firstComponent = componentData[0][0];
+  return Object.keys(firstComponent).filter(key =>
+    key.toLowerCase().includes('external regressor correlation')
+  );
+}, [componentData]);
+```
+
+**Color Scale Implementation:**
+- Uses interpolated RGB values for smooth gradient
+- Blue for negative correlations (r < 0)
+- Red for positive correlations (r > 0)
+- White at zero (r = 0)
+- Different intensity ranges for light/dark themes
+
+**Dynamic Sizing:**
+- Width: `Math.min(1200, 100 + columns * 80 + 60)` pixels
+- Height: `Math.min(800, 160 + rows * 20)` pixels
+- Ensures heatmap is readable for both small and large datasets
+
+### Files Created
+- `src/Plots/CorrelationHeatmap.js`
+
+### Files Modified
+- `src/Plots/Plots.js`
+
+### Build Status
+- Compiled successfully with no warnings
+
+### Interaction Features
+- Click cell → selects component (updates scatter plots, pie chart, brain viewer, table)
+- Hover → tooltip with component name, regressor name, correlation value
+- Selected component row highlighted with dark border
+- Scroll to zoom (inherited from visx if needed in future)
+
+### Backward Compatibility
+- If tedana output doesn't have correlation columns, falls back to static SVG display
+- Works with both new tedana outputs (with correlation data) and old outputs (SVG only)
+
+### Session 11.1 - Heatmap Polish (2026-01-09)
+
+**Issues Fixed:**
+1. Colorbar was overlapping heatmap
+2. Colors were too weak/pastel
+
+**Changes:**
+1. **Colorbar positioning**: Increased right margin from 40px to 100px, repositioned colorbar to `margin.left + innerWidth + 20` so it sits cleanly to the right of the heatmap
+2. **More saturated colors**:
+   - Blue (negative): Now uses vibrant blue (rgb 50,100,220 at -1) instead of pastel
+   - Red (positive): Now uses strong red (rgb 255,50,50 at +1) instead of pastel
+   - White at zero correlation
+3. **Updated width calculation**: Increased max width from 1200px to 1400px to accommodate colorbar
+
+**Files Modified:**
+- `src/Plots/CorrelationHeatmap.js` - Colors, margins, colorbar position
+- `src/Plots/Plots.js` - Width calculation
+
+---
+
 ## Template for Future Sessions
 
 ```
