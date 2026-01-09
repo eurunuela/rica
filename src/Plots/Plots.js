@@ -8,6 +8,7 @@ import TimeSeries from "./TimeSeries";
 import FFTSpectrum from "./FFTSpectrum";
 import BrainViewer from "./BrainViewer";
 import ComponentTable from "./ComponentTable";
+import CorrelationHeatmap from "./CorrelationHeatmap";
 import { assignColor, formatComponentName } from "./PlotUtils";
 
 // Chart dimensions - sized to fit 2x2 in half screen width
@@ -70,6 +71,20 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
     const label = processedData[selectedIndex]?.label || "";
     return formatComponentName(label);
   }, [processedData, selectedIndex]);
+
+  // Extract external regressor correlation columns from componentData
+  const externalRegressorColumns = useMemo(() => {
+    if (!componentData?.[0]?.length) return [];
+    const firstComponent = componentData[0][0];
+    if (!firstComponent) return [];
+    // Find all columns that contain "external regressor correlation"
+    return Object.keys(firstComponent).filter(key =>
+      key.toLowerCase().includes('external regressor correlation')
+    );
+  }, [componentData]);
+
+  // Check if we have external regressor correlation data
+  const hasExternalRegressorData = externalRegressorColumns.length > 0;
 
   // Initialize data from props
   const initializeData = useCallback(() => {
@@ -512,8 +527,8 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
         isDark={isDark}
       />
 
-      {/* External Regressors Correlation Figure */}
-      {externalRegressorsFigure && (
+      {/* External Regressors Correlation Heatmap (interactive) or static figure */}
+      {(hasExternalRegressorData || externalRegressorsFigure) && (
         <div style={{
           width: '100%',
           display: 'flex',
@@ -522,23 +537,41 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
           padding: '24px 16px',
           marginTop: '16px',
         }}>
-          <h3 style={{
-            fontSize: '16px',
-            fontWeight: 600,
-            color: 'var(--text-primary)',
-            marginBottom: '16px',
-          }}>
-            External Regressor Correlations
-          </h3>
-          <img
-            src={externalRegressorsFigure}
-            alt="External Regressor Correlations"
-            style={{
-              maxWidth: '100%',
-              height: 'auto',
-              borderRadius: '8px',
-            }}
-          />
+          {hasExternalRegressorData ? (
+            // Interactive heatmap when correlation data is available in metrics TSV
+            <div style={{ width: '100%', maxWidth: '1400px' }}>
+              <CorrelationHeatmap
+                data={componentData[0]}
+                regressorColumns={externalRegressorColumns}
+                width={Math.min(1400, 200 + externalRegressorColumns.length * 80)}
+                height={Math.min(800, 160 + processedData.length * 20)}
+                selectedIndex={selectedIndex}
+                onCellClick={handlePointClick}
+                isDark={isDark}
+              />
+            </div>
+          ) : (
+            // Fallback to static SVG if no correlation data but figure exists
+            <>
+              <h3 style={{
+                fontSize: '16px',
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                marginBottom: '16px',
+              }}>
+                External Regressor Correlations
+              </h3>
+              <img
+                src={externalRegressorsFigure}
+                alt="External Regressor Correlations"
+                style={{
+                  maxWidth: '100%',
+                  height: 'auto',
+                  borderRadius: '8px',
+                }}
+              />
+            </>
+          )}
         </div>
       )}
     </div>
