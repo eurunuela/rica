@@ -1623,6 +1623,42 @@ import { VERSION_DISPLAY } from "./constants/version";
 
 ---
 
+## Session 13 - PR Review Fixes (2026-01-10)
+
+### Goals
+- Address PR review comments about command injection vulnerabilities in shell scripts
+
+### PR Review Comments Addressed
+
+#### 1. scripts/test.sh - Command Injection (Already Fixed)
+- **Issue**: `eval $CMD` with user-controlled `TEST_FILE` argument allowed command injection
+- **Status**: Already fixed in a previous commit using bash array (`ARGS=()`) with safe expansion (`"${ARGS[@]}"`)
+
+#### 2. scripts/lint.sh - Command Injection (Fixed)
+- **Issue**: String concatenation of `CMD` with unvalidated `TARGET` argument allowed injection
+- **Fix**: Converted from string concatenation to bash array approach:
+  ```bash
+  # Before (vulnerable)
+  CMD="npx eslint"
+  CMD="$CMD --ext .js,.jsx $TARGET"
+  $CMD
+
+  # After (safe)
+  CMD=(npx eslint)
+  CMD+=("--ext" ".js,.jsx" "$TARGET")
+  "${CMD[@]}"
+  ```
+
+### Files Modified
+- `scripts/lint.sh` - Fixed command injection vulnerability using bash array
+
+### Technical Details
+- Using bash arrays prevents shell metacharacters in arguments from being interpreted
+- Array expansion with `"${CMD[@]}"` ensures each element is treated as a separate, properly-quoted argument
+- This is the standard pattern for safely building and executing commands with user input
+
+---
+
 ## Template for Future Sessions
 
 ```
