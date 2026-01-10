@@ -85,7 +85,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           f === "report.txt" ||
           (f.includes("_metrics.tsv") && !f.includes("PCA")) ||
           (f.startsWith("tedana_20") && f.endsWith(".tsv")) ||
-          (f.includes("_mixing.tsv") && !f.includes("PCA")) ||
+          (f.includes("_mixing.tsv") && !f.includes("PCA") && !f.includes("Orth")) ||
           (f.includes("stat-z_components.nii.gz") && f.includes("ICA")) ||
           f.includes("_mask.nii") ||
           f.includes("CrossComponent_metrics.json") ||
@@ -182,8 +182,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
-          // ICA Mixing matrix
-          if (filename.includes("_mixing.tsv") && !filename.includes("PCA")) {
+          // ICA Mixing matrix (exclude PCA and Orth variants)
+          if (filename.includes("_mixing.tsv") && !filename.includes("PCA") && !filename.includes("Orth")) {
             const response = await fetch(`/${filepath}`);
             const text = await response.text();
             mixingMatrix = parseMixingMatrix(text);
@@ -295,7 +295,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           (f.name.includes("_metrics.tsv") && !f.name.includes("PCA")) ||
           (f.name.startsWith("tedana_20") && f.name.endsWith(".tsv")) ||
           // New files for Niivue integration
-          (f.name.includes("_mixing.tsv") && !f.name.includes("PCA")) ||
+          (f.name.includes("_mixing.tsv") && !f.name.includes("PCA") && !f.name.includes("Orth")) ||
           (f.name.includes("stat-z_components.nii.gz") && f.name.includes("ICA")) ||
           f.name.includes("_mask.nii") ||
           f.name.includes("CrossComponent_metrics.json") ||
@@ -386,8 +386,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
-          // ICA Mixing matrix (time series data for Niivue)
-          if (filename.includes("_mixing.tsv") && !filename.includes("PCA")) {
+          // ICA Mixing matrix (time series data for Niivue, exclude PCA and Orth variants)
+          if (filename.includes("_mixing.tsv") && !filename.includes("PCA") && !filename.includes("Orth")) {
             const text = await readFileAsText(file);
             mixingMatrix = parseMixingMatrix(text);
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
