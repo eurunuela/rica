@@ -1,4 +1,5 @@
 import React from "react";
+import { LOGO_DATA_URL } from "./constants/logo";
 
 function MobileMain() {
   return (
@@ -23,7 +24,7 @@ function MobileMain() {
           marginBottom: '32px',
         }}>
           <img
-            src="/favicon.ico"
+            src={LOGO_DATA_URL}
             alt="Rica"
             style={{ width: '40px', height: '40px' }}
           />

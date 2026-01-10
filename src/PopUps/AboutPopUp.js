@@ -1,6 +1,8 @@
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGithub } from "@fortawesome/free-brands-svg-icons";
+import { LOGO_DATA_URL } from "../constants/logo";
+import { VERSION_DISPLAY } from "../constants/version";
 
 function AboutPopup({ closePopup, isDark }) {
   return (
@@ -73,7 +75,7 @@ function AboutPopup({ closePopup, isDark }) {
             marginBottom: '20px'
           }}>
             <img
-              src="/favicon.ico"
+              src={LOGO_DATA_URL}
               alt="Rica"
               style={{ width: '36px', height: '36px' }}
             />
@@ -93,7 +95,7 @@ function AboutPopup({ closePopup, isDark }) {
                 margin: 0,
                 marginTop: '2px',
               }}>
-                v2.0.0
+                {VERSION_DISPLAY}
               </p>
             </div>
           </div>

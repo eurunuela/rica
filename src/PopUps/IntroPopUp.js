@@ -3,6 +3,8 @@ import Papa from "papaparse";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFolder } from "@fortawesome/free-solid-svg-icons";
 import { parseMixingMatrix } from "../utils/tsvParser";
+import { LOGO_DATA_URL } from "../constants/logo";
+import { VERSION_DISPLAY } from "../constants/version";
 
 // Convert blob to data URL
 function blobToDataURL(blob) {
@@ -582,7 +584,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
                 marginBottom: '20px'
               }}>
                 <img
-                  src="/favicon.ico"
+                  src={LOGO_DATA_URL}
                   alt="Rica"
                   style={{ width: '36px', height: '36px' }}
                 />
@@ -602,7 +604,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
                     margin: 0,
                     marginTop: '2px',
                   }}>
-                    v2.0.0
+                    {VERSION_DISPLAY}
                   </p>
                 </div>
               </div>

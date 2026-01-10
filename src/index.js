@@ -11,6 +11,7 @@ import "./styles.css";
 
 import { TabList, TabPanels, TabPanel } from "./TabComponents";
 import { AnimatedTab, AnimatedTabs } from "./TabFunctions";
+import { LOGO_DATA_URL } from "./constants/logo";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faInfoCircle,
@@ -195,7 +196,7 @@ function App() {
                 {/* Left: Logo/Brand */}
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <img
-                    src="/favicon.ico"
+                    src={LOGO_DATA_URL}
                     alt="Rica logo"
                     style={{
                       width: "26px",

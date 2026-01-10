@@ -1543,6 +1543,86 @@ const externalRegressorColumns = useMemo(() => {
 
 ---
 
+## Session 12 - Embedded Logo and Version Management (2026-01-10)
+
+### Goals
+- Fix logo not rendering when using local build with tedana
+- Centralize version management across package.json, UI, and release tags
+- Update README to reflect current version and features
+
+### Changes Made
+
+#### Embedded Logo (Self-Contained Build)
+1. **src/constants/logo.js** (new file):
+   - Created LOGO_DATA_URL constant with favicon encoded as base64 data URL
+   - Eliminates need for external favicon.ico file in local deployments
+   - ~20KB embedded, well-compressed by gzip
+
+2. Updated components to use embedded logo:
+   - **src/index.js** - Navbar logo
+   - **src/PopUps/IntroPopUp.js** - Intro popup logo
+   - **src/PopUps/AboutPopUp.js** - About popup logo
+   - **src/Mobile.js** - Mobile fallback logo
+
+#### Centralized Version Management
+3. **src/constants/version.js** (new file):
+   - Imports version from package.json at build time
+   - Exports VERSION and VERSION_DISPLAY constants
+   - Single source of truth for version across entire app
+
+4. Updated components to use centralized version:
+   - **src/PopUps/IntroPopUp.js** - Uses VERSION_DISPLAY
+   - **src/PopUps/AboutPopUp.js** - Uses VERSION_DISPLAY
+
+#### Build System Updates
+5. **scripts/build.sh**:
+   - Removed favicon.ico copy step (no longer needed)
+   - Updated usage instructions
+
+6. **.github/workflows/build.yml**:
+   - Removed favicon.ico from artifacts and releases
+   - Simplified copy step
+
+#### Documentation Updates
+7. **README.md**:
+   - Reorganized features section (ICA, QC, UX categories)
+   - Added QC tab features
+   - Added external regressor heatmap mention
+   - Updated local server instructions (no favicon.ico needed)
+   - Added Versioning section with npm version commands
+   - Updated Required Files table
+
+### Technical Details
+```javascript
+// Logo is now embedded as base64
+import { LOGO_DATA_URL } from "./constants/logo";
+<img src={LOGO_DATA_URL} alt="Rica logo" />
+
+// Version is imported from package.json
+import { VERSION_DISPLAY } from "./constants/version";
+<p>{VERSION_DISPLAY}</p> // Shows "v2.0.0"
+```
+
+### Files Created
+- `src/constants/logo.js` - Embedded favicon as base64 data URL
+- `src/constants/version.js` - Centralized version management
+
+### Files Modified
+- `src/index.js` - Import and use LOGO_DATA_URL
+- `src/Mobile.js` - Import and use LOGO_DATA_URL
+- `src/PopUps/IntroPopUp.js` - Import LOGO_DATA_URL and VERSION_DISPLAY
+- `src/PopUps/AboutPopUp.js` - Import LOGO_DATA_URL and VERSION_DISPLAY
+- `scripts/build.sh` - Remove favicon.ico copy
+- `.github/workflows/build.yml` - Remove favicon.ico from artifacts
+- `README.md` - Updated features, instructions, versioning docs
+
+### Build Impact
+- Main bundle increased by ~4.15 KB (embedded base64 logo)
+- Fully self-contained single-file distribution
+- No external assets required for local deployment
+
+---
+
 ## Template for Future Sessions
 
 ```
