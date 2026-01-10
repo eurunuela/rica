@@ -32,10 +32,8 @@ jobs:
       - name: Inline assets (single-file HTML)
         run: npx gulp
 
-      - name: Copy server files
-        run: |
-          cp scripts/rica_server.py build/
-          cp public/favicon.ico build/
+      - name: Copy server script
+        run: cp scripts/rica_server.py build/
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -44,7 +42,6 @@ jobs:
           path: |
             build/index.html
             build/rica_server.py
-            build/favicon.ico
           retention-days: 90
 
       # Create release assets when a tag is pushed
@@ -55,5 +52,4 @@ jobs:
           files: |
             build/index.html
             build/rica_server.py
-            build/favicon.ico
           generate_release_notes: true
