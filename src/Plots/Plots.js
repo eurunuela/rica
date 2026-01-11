@@ -437,7 +437,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
             gap: '6px'
           }}
         >
-          {/* View toggle - only show when interactive views are available */}
+          {/* View toggle - matches ToggleSwitch styling pattern */}
           {hasInteractiveViews && (
             <div style={{
               display: 'flex',
@@ -446,38 +446,50 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
               marginBottom: '4px',
             }}>
               <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>View:</span>
-              <button
-                onClick={() => setUseStaticView(false)}
-                style={{
-                  padding: '4px 12px',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  backgroundColor: !useStaticView ? (isDark ? '#3b82f6' : '#2563eb') : (isDark ? '#27272a' : '#f3f4f6'),
-                  color: !useStaticView ? '#ffffff' : 'var(--text-secondary)',
-                }}
-              >
-                Interactive
-              </button>
-              <button
-                onClick={() => setUseStaticView(true)}
-                style={{
-                  padding: '4px 12px',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  backgroundColor: useStaticView ? (isDark ? '#3b82f6' : '#2563eb') : (isDark ? '#27272a' : '#f3f4f6'),
-                  color: useStaticView ? '#ffffff' : 'var(--text-secondary)',
-                }}
-              >
-                Static
-              </button>
+              <div style={{
+                position: 'relative',
+                height: '32px',
+                fontWeight: 600,
+                backgroundColor: isDark ? '#27272a' : '#e5e7eb',
+                borderRadius: '8px',
+                display: 'flex',
+              }}>
+                {['Interactive', 'Static'].map((val) => (
+                  <span
+                    key={val}
+                    onClick={() => setUseStaticView(val === 'Static')}
+                    style={{
+                      position: 'relative',
+                      zIndex: 10,
+                      height: '32px',
+                      width: '80px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'color 0.2s ease',
+                      color: (val === 'Static') === useStaticView ? '#1f2937' : (isDark ? '#a1a1aa' : 'rgba(0,0,0,0.6)'),
+                      fontSize: '12px',
+                    }}
+                  >
+                    {val}
+                  </span>
+                ))}
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: useStaticView ? '80px' : '0px',
+                    zIndex: 0,
+                    display: 'block',
+                    height: '32px',
+                    width: '80px',
+                    borderRadius: '8px',
+                    transition: 'all 0.2s ease',
+                    background: isDark ? '#3b82f6' : '#60a5fa',
+                  }}
+                />
+              </div>
             </div>
           )}
 

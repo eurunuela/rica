@@ -167,7 +167,7 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
           transition: 'all 0.15s ease',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = isDark ? '#27272a' : '#f3f4f6';
+          e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.backgroundColor = 'transparent';
