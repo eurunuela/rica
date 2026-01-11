@@ -1,4 +1,6 @@
 import React, { useRef, useEffect, useMemo } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
 import { formatComponentName } from "./PlotUtils";
 
 // Theme-aware colors
@@ -66,12 +68,13 @@ const DISPLAY_COLUMNS = [
   "classification_tags",
 ];
 
-function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDark = false }) {
+function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDark = false, isCollapsed = false, onToggleCollapse }) {
   const selectedRowRef = useRef(null);
   const tableContainerRef = useRef(null);
 
-  // Scroll selected row into view when selection changes
+  // Scroll selected row into view when selection changes (only if not collapsed)
   useEffect(() => {
+    if (isCollapsed) return; // Don't auto-scroll when collapsed
     if (selectedRowRef.current && tableContainerRef.current) {
       const container = tableContainerRef.current;
       const row = selectedRowRef.current;
@@ -88,7 +91,7 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
         });
       }
     }
-  }, [selectedIndex]);
+  }, [selectedIndex, isCollapsed]);
 
   // Determine which columns exist in the data
   const columns = useMemo(() => {
@@ -143,25 +146,64 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
 
   return (
     <div style={{ width: "80%", margin: "0 auto", padding: "16px 24px 24px 24px" }}>
-      <h3 style={{
-        textAlign: 'center',
-        fontSize: '18px',
-        fontWeight: 600,
-        color: 'var(--text-primary)',
-        marginBottom: '12px',
-      }}>
+      {/* Collapsible header */}
+      <button
+        onClick={onToggleCollapse}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          width: '100%',
+          padding: '8px 12px',
+          marginBottom: isCollapsed ? '0' : '12px',
+          fontSize: '16px',
+          fontWeight: 600,
+          color: 'var(--text-primary)',
+          backgroundColor: 'transparent',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          transition: 'all 0.15s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = isDark ? '#27272a' : '#f3f4f6';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent';
+        }}
+      >
+        <FontAwesomeIcon
+          icon={faChevronDown}
+          style={{
+            fontSize: '12px',
+            transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s ease',
+          }}
+        />
         Component Metrics
-      </h3>
+        <span style={{
+          fontSize: '12px',
+          fontWeight: 400,
+          color: 'var(--text-tertiary)',
+        }}>
+          ({data.length} components)
+        </span>
+      </button>
+
+      {/* Collapsible table container */}
       <div
         ref={tableContainerRef}
         style={{
-          maxHeight: "350px",
-          overflowY: "auto",
-          overflowX: "auto",
+          maxHeight: isCollapsed ? '0' : '350px',
+          overflowY: isCollapsed ? 'hidden' : 'auto',
+          overflowX: isCollapsed ? 'hidden' : 'auto',
           margin: "0 8px",
           borderRadius: '12px',
-          border: `1px solid ${borderColor}`,
+          border: isCollapsed ? 'none' : `1px solid ${borderColor}`,
           backgroundColor: 'var(--bg-secondary)',
+          transition: 'max-height 0.3s ease, opacity 0.2s ease',
+          opacity: isCollapsed ? 0 : 1,
         }}
       >
         <table style={{ width: '100%', fontSize: '13px', borderCollapse: "separate", borderSpacing: "0" }}>

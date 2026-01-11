@@ -1659,6 +1659,97 @@ import { VERSION_DISPLAY } from "./constants/version";
 
 ---
 
+## Session 14 - UX Improvements: Toggle and Collapsible Table (2026-01-11)
+
+### Goals
+- Implement user feedback from Neurostars forum post
+- Add toggle between interactive (Niivue) and static (PNG) brain map visualization
+- Make component table collapsible to reduce auto-scroll distraction
+- Reduce layout dimensions for better screen fit
+
+### User Feedback Addressed
+From https://neurostars.org/t/new-version-of-rica/34989/2:
+1. User wanted ability to toggle between new and previous visualization methods
+2. Auto-scroll behavior when selecting from pie chart was distracting
+3. Interface too large for comfortable single-screen viewing
+
+### Changes Made
+
+#### src/Plots/Plots.js
+1. **Added state for view toggle and table collapse**:
+   - `useStaticView` state - Toggle between interactive Niivue and static PNG
+   - `isTableCollapsed` state - Track component table collapse state
+
+2. **Reduced chart dimensions for better screen fit**:
+   - `CHART_WIDTH`: 420px → 360px
+   - `CHART_HEIGHT`: 380px → 320px
+   - TimeSeries/FFTSpectrum height: 180px → 150px
+   - BrainViewer height: 350px → 280px
+   - Right panel width: Fixed 800px → 50% (max 800px)
+
+3. **Added View toggle buttons**:
+   - "Interactive" and "Static" buttons above brain viewer
+   - Only shown when interactive data is available
+   - Blue highlight for active selection
+
+4. **Updated ComponentTable props**:
+   - Pass `isCollapsed` and `onToggleCollapse` props
+
+#### src/Plots/ComponentTable.js
+1. **Added collapsible functionality**:
+   - Import FontAwesome chevron icon
+   - Accept `isCollapsed` and `onToggleCollapse` props
+   - Added clickable header button with chevron that rotates when collapsed
+   - Shows component count in header
+   - Smooth CSS transition for collapse/expand animation
+
+2. **Modified auto-scroll behavior**:
+   - Auto-scroll disabled when table is collapsed
+   - Prevents page jump when selecting components from pie chart while collapsed
+
+### Technical Details
+
+**View Toggle Pattern:**
+```javascript
+{hasInteractiveViews && (
+  <div>
+    <button onClick={() => setUseStaticView(false)}>Interactive</button>
+    <button onClick={() => setUseStaticView(true)}>Static</button>
+  </div>
+)}
+```
+
+**Collapsible Table Pattern:**
+```javascript
+<button onClick={onToggleCollapse}>
+  <FontAwesomeIcon
+    icon={faChevronDown}
+    style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
+  />
+  Component Metrics ({data.length} components)
+</button>
+<div style={{ maxHeight: isCollapsed ? '0' : '350px', opacity: isCollapsed ? 0 : 1 }}>
+  {/* table content */}
+</div>
+```
+
+### Files Modified
+- `src/Plots/Plots.js` - View toggle, reduced dimensions, table collapse state
+- `src/Plots/ComponentTable.js` - Collapsible header, disabled auto-scroll when collapsed
+
+### Build Status
+- Compiled successfully (+418 B to main bundle)
+
+### UX Improvements Summary
+| Before | After |
+|--------|-------|
+| Fixed interactive-only view | Toggle between Interactive/Static |
+| Always-visible table with auto-scroll | Collapsible table, no scroll when collapsed |
+| 420x380px charts, 800px right panel | 360x320px charts, 50% responsive right panel |
+| ~2000px+ page height | ~1600px page height (fits better on 1080p screens) |
+
+---
+
 ## Template for Future Sessions
 
 ```

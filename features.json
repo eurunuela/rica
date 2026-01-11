@@ -639,6 +639,52 @@
         "Falls back to static SVG if correlation columns not in metrics TSV"
       ],
       "passes": true
+    },
+    {
+      "id": "toggle_interactive_static_view",
+      "category": "interactivity",
+      "description": "Toggle between interactive Niivue brain maps and static PNG component images",
+      "steps": [
+        "Load a tedana folder containing NIfTI and mixing matrix files",
+        "Navigate to the 'ICA' tab",
+        "Verify 'Interactive' and 'Static' toggle buttons appear above the brain viewer",
+        "Click 'Static' button to switch to static PNG display",
+        "Verify component image displays as static PNG instead of Niivue viewer",
+        "Click 'Interactive' button to switch back to Niivue + time series + FFT display",
+        "Verify interactive views are restored with brain mosaic, time series, and spectrum"
+      ],
+      "passes": true
+    },
+    {
+      "id": "collapsible_component_table",
+      "category": "ui",
+      "description": "Collapse/expand the component metrics table to reduce auto-scroll distraction",
+      "steps": [
+        "Load a tedana folder",
+        "Navigate to the 'ICA' tab",
+        "Verify 'Component Metrics' header has a chevron icon and component count",
+        "Click on the header to collapse the table",
+        "Verify chevron rotates and table smoothly collapses (height transitions to 0)",
+        "Select a component from pie chart while table is collapsed",
+        "Verify page does NOT auto-scroll to table (distraction eliminated)",
+        "Click header again to expand the table",
+        "Verify table re-appears with smooth transition"
+      ],
+      "passes": true
+    },
+    {
+      "id": "compact_layout",
+      "category": "ui",
+      "description": "Compact layout with reduced chart dimensions for better screen fit",
+      "steps": [
+        "Load a tedana folder",
+        "Navigate to the 'ICA' tab",
+        "Verify scatter plots and pie chart use reduced dimensions (360x320px)",
+        "Verify brain viewer, time series, and FFT use reduced dimensions",
+        "Verify right panel uses responsive 50% width instead of fixed 800px",
+        "Verify overall page height is reduced to better fit standard 1080p screens"
+      ],
+      "passes": true
     }
   ]
 }

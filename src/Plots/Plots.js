@@ -12,9 +12,9 @@ import CorrelationHeatmap from "./CorrelationHeatmap";
 import { assignColor, formatComponentName } from "./PlotUtils";
 
 // Chart dimensions - sized to fit 2x2 in half screen width
-// Each chart takes ~45% of half the screen width (with gap)
-const CHART_WIDTH = 420;
-const CHART_HEIGHT = 380;
+// Reduced for better screen fit (was 420x380)
+const CHART_WIDTH = 360;
+const CHART_HEIGHT = 320;
 
 // Theme-aware colors
 const getColors = (isDark) => ({
@@ -35,6 +35,8 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
   const [selectedClassification, setSelectedClassification] = useState("accepted");
   const [clickedElement, setClickedElement] = useState("");
   const [colormapSaturation, setColormapSaturation] = useState(0.25); // Default 25%
+  const [useStaticView, setUseStaticView] = useState(false); // Toggle for static PNG vs interactive Niivue
+  const [isTableCollapsed, setIsTableCollapsed] = useState(false); // Toggle for component table visibility
 
   // Check if we have the new interactive visualization data
   const hasInteractiveViews = mixingMatrix?.data && niftiBuffer;
@@ -424,24 +426,69 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
               </div>
             </div>
 
-        {/* Right side: Component visualization - 800px to match charts */}
+        {/* Right side: Component visualization - 50% width to match left */}
         <div
           style={{
-            width: '800px',
+            width: '50%',
+            maxWidth: '800px',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px'
           }}
         >
-          {hasInteractiveViews ? (
+          {/* View toggle - only show when interactive views are available */}
+          {hasInteractiveViews && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '4px',
+            }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>View:</span>
+              <button
+                onClick={() => setUseStaticView(false)}
+                style={{
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  backgroundColor: !useStaticView ? (isDark ? '#3b82f6' : '#2563eb') : (isDark ? '#27272a' : '#f3f4f6'),
+                  color: !useStaticView ? '#ffffff' : 'var(--text-secondary)',
+                }}
+              >
+                Interactive
+              </button>
+              <button
+                onClick={() => setUseStaticView(true)}
+                style={{
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  backgroundColor: useStaticView ? (isDark ? '#3b82f6' : '#2563eb') : (isDark ? '#27272a' : '#f3f4f6'),
+                  color: useStaticView ? '#ffffff' : 'var(--text-secondary)',
+                }}
+              >
+                Static
+              </button>
+            </div>
+          )}
+
+          {hasInteractiveViews && !useStaticView ? (
             <>
               {/* Time series on top */}
               <div style={{ width: '100%' }}>
                 <TimeSeries
                   data={currentTimeSeries}
-                  width={800}
-                  height={180}
+                  width={750}
+                  height={150}
                   title="Time Series"
                   componentLabel={currentComponentLabel}
                   lineColor={selectedClassification === 'accepted' ? getColors(isDark).acceptedHover : getColors(isDark).rejectedHover}
@@ -455,8 +502,8 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
                   niftiBuffer={niftiBuffer}
                   maskBuffer={maskBuffer}
                   componentIndex={selectedIndex}
-                  width={800}
-                  height={350}
+                  width={750}
+                  height={280}
                   componentLabel={currentComponentLabel}
                   saturation={colormapSaturation}
                   isDark={isDark}
@@ -465,12 +512,13 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
 
               {/* Saturation slider */}
               <div style={{
-                width: '800px',
+                width: '100%',
+                maxWidth: '750px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '12px',
-                padding: '8px 0',
+                padding: '4px 0',
               }}>
                 <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Saturation:</span>
                 <input
@@ -481,7 +529,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
                   onChange={(e) => setColormapSaturation(parseFloat(e.target.value) / 100)}
                   className="focus:outline-none"
                   style={{
-                    width: '400px',
+                    width: '300px',
                     cursor: 'pointer',
                     accentColor: '#3b82f6',
                     outline: 'none',
@@ -496,8 +544,8 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
               <div style={{ width: '100%' }}>
                 <FFTSpectrum
                   timeSeries={currentTimeSeries}
-                  width={800}
-                  height={180}
+                  width={750}
+                  height={150}
                   title="Power Spectrum"
                   sampleRate={1}
                   lineColor={selectedClassification === 'accepted' ? getColors(isDark).acceptedHover : getColors(isDark).rejectedHover}
@@ -506,25 +554,28 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
               </div>
             </>
           ) : (
-            /* Fallback to existing PNG display */
+            /* Static PNG display - either by choice or fallback */
             clickedElement && (
               <img
                 className="max-w-full h-auto rounded-lg shadow-lg"
                 alt="Component visualization"
                 src={clickedElement}
+                style={{ maxHeight: '600px' }}
               />
             )
           )}
         </div>
       </div>
 
-      {/* Component table - full width below charts */}
+      {/* Component table - full width below charts (collapsible) */}
       <ComponentTable
         data={componentData?.[0] || []}
         selectedIndex={selectedIndex}
         onRowClick={handlePointClick}
         classifications={processedData.map((d) => d.classification)}
         isDark={isDark}
+        isCollapsed={isTableCollapsed}
+        onToggleCollapse={() => setIsTableCollapsed(!isTableCollapsed)}
       />
 
       {/* External Regressors Correlation Heatmap (interactive) or static figure */}
