@@ -1748,6 +1748,27 @@ From https://neurostars.org/t/new-version-of-rica/34989/2:
 | 420x380px charts, 800px right panel | 360x320px charts, 50% responsive right panel |
 | ~2000px+ page height | ~1600px page height (fits better on 1080p screens) |
 
+### Session 14.1 - Accessibility Improvements (2026-01-11)
+
+Addressed Copilot PR review comments for accessibility:
+
+**View Toggle (Plots.js):**
+- Added `role="radiogroup"` and `aria-labelledby` to toggle container
+- Added `role="radio"`, `aria-checked`, `aria-label` to each option
+- Added `tabIndex={0}` and keyboard support (Enter/Space)
+- Added `aria-hidden="true"` to decorative sliding indicator
+
+**Saturation Slider (Plots.js):**
+- Changed `<span>` label to `<label>` with `htmlFor`
+- Added `id="saturation-slider"` to input
+- Added `aria-label`, `aria-valuemin`, `aria-valuemax`, `aria-valuenow`
+
+**Collapsible Table (ComponentTable.js):**
+- Added `id`, `aria-expanded`, `aria-controls`, `aria-label` to toggle button
+- Added `aria-hidden="true"` to chevron icon
+- Added `id`, `role="region"`, `aria-labelledby`, `aria-hidden` to table container
+- Fixed transition timing: opacity 0.2s → 0.3s (matches maxHeight)
+
 ---
 
 ## Template for Future Sessions

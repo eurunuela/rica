@@ -445,19 +445,33 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
               gap: '8px',
               marginBottom: '4px',
             }}>
-              <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>View:</span>
-              <div style={{
-                position: 'relative',
-                height: '32px',
-                fontWeight: 600,
-                backgroundColor: isDark ? '#27272a' : '#e5e7eb',
-                borderRadius: '8px',
-                display: 'flex',
-              }}>
+              <span id="view-toggle-label" style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>View:</span>
+              <div
+                role="radiogroup"
+                aria-labelledby="view-toggle-label"
+                style={{
+                  position: 'relative',
+                  height: '32px',
+                  fontWeight: 600,
+                  backgroundColor: isDark ? '#27272a' : '#e5e7eb',
+                  borderRadius: '8px',
+                  display: 'flex',
+                }}
+              >
                 {['Interactive', 'Static'].map((val) => (
                   <span
                     key={val}
+                    role="radio"
+                    aria-checked={(val === 'Static') === useStaticView}
+                    aria-label={`Switch to ${val.toLowerCase()} view`}
+                    tabIndex={0}
                     onClick={() => setUseStaticView(val === 'Static')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setUseStaticView(val === 'Static');
+                      }
+                    }}
                     style={{
                       position: 'relative',
                       zIndex: 10,
@@ -476,6 +490,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
                   </span>
                 ))}
                 <span
+                  aria-hidden="true"
                   style={{
                     position: 'absolute',
                     top: 0,
@@ -532,13 +547,18 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
                 gap: '12px',
                 padding: '4px 0',
               }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Saturation:</span>
+                <label htmlFor="saturation-slider" style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Saturation:</label>
                 <input
+                  id="saturation-slider"
                   type="range"
                   min="1"
                   max="100"
                   value={colormapSaturation * 100}
                   onChange={(e) => setColormapSaturation(parseFloat(e.target.value) / 100)}
+                  aria-label="Adjust brain map colormap saturation"
+                  aria-valuemin={1}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(colormapSaturation * 100)}
                   className="focus:outline-none"
                   style={{
                     width: '300px',

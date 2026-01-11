@@ -148,7 +148,11 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
     <div style={{ width: "80%", margin: "0 auto", padding: "16px 24px 24px 24px" }}>
       {/* Collapsible header */}
       <button
+        id="component-metrics-toggle"
         onClick={onToggleCollapse}
+        aria-expanded={!isCollapsed}
+        aria-controls="component-metrics-table"
+        aria-label="Toggle component metrics table"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -175,6 +179,7 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
       >
         <FontAwesomeIcon
           icon={faChevronDown}
+          aria-hidden="true"
           style={{
             fontSize: '12px',
             transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
@@ -193,6 +198,10 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
 
       {/* Collapsible table container */}
       <div
+        id="component-metrics-table"
+        role="region"
+        aria-labelledby="component-metrics-toggle"
+        aria-hidden={isCollapsed}
         ref={tableContainerRef}
         style={{
           maxHeight: isCollapsed ? '0' : '350px',
@@ -202,7 +211,7 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
           borderRadius: '12px',
           border: isCollapsed ? 'none' : `1px solid ${borderColor}`,
           backgroundColor: 'var(--bg-secondary)',
-          transition: 'max-height 0.3s ease, opacity 0.2s ease',
+          transition: 'max-height 0.3s ease, opacity 0.3s ease',
           opacity: isCollapsed ? 0 : 1,
         }}
       >
