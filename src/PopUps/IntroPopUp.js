@@ -39,6 +39,44 @@ function rankComponents(data) {
   });
 }
 
+// Parse manual classification TSV file
+function parseManualClassification(text) {
+  const parsed = Papa.parse(text, {
+    header: true,
+    skipEmptyLines: true,
+    dynamicTyping: true,
+  });
+  return parsed.data;
+}
+
+// Apply manual classifications to component data
+function applyManualClassifications(components, manualClassificationData) {
+  if (!manualClassificationData || !components.length) {
+    return;
+  }
+
+  // Create a Map for O(n) lookup performance
+  const manualMap = new Map(
+    manualClassificationData.map((entry) => [entry.Component, entry])
+  );
+
+  components.forEach((component) => {
+    const manualEntry = manualMap.get(component.Component);
+    if (manualEntry) {
+      component.classification = manualEntry.classification;
+      if (manualEntry.original_classification) {
+        component.original_classification = manualEntry.original_classification;
+      }
+      if (manualEntry.classification_tags) {
+        component.classification_tags = manualEntry.classification_tags;
+      }
+      if (manualEntry.rationale) {
+        component.rationale = manualEntry.rationale;
+      }
+    }
+  });
+}
+
 // Promise wrapper for FileReader
 function readFileAsDataURL(file) {
   return new Promise((resolve, reject) => {
@@ -235,12 +273,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           if (filename === "manual_classification.tsv") {
             const response = await fetch(`/${filepath}`);
             const text = await response.text();
-            const parsed = Papa.parse(text, {
-              header: true,
-              skipEmptyLines: true,
-              dynamicTyping: true,
-            });
-            manualClassificationData = parsed.data;
+            manualClassificationData = parseManualClassification(text);
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
         } catch (error) {
@@ -254,25 +287,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       diagnosticFigures.sort((a, b) => a.name.localeCompare(b.name));
 
       // Apply manual classifications if available
-      if (manualClassificationData && components.length > 0) {
-        components.forEach((component) => {
-          const manualEntry = manualClassificationData.find(
-            (m) => m.Component === component.Component
-          );
-          if (manualEntry) {
-            component.classification = manualEntry.classification;
-            if (manualEntry.original_classification) {
-              component.original_classification = manualEntry.original_classification;
-            }
-            if (manualEntry.classification_tags) {
-              component.classification_tags = manualEntry.classification_tags;
-            }
-            if (manualEntry.rationale) {
-              component.rationale = manualEntry.rationale;
-            }
-          }
-        });
-      }
+      applyManualClassifications(components, manualClassificationData);
 
       // Pass all data to parent
       onDataLoad({
@@ -469,12 +484,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           // Manual classification file
           if (filename === "manual_classification.tsv") {
             const text = await readFileAsText(file);
-            const parsed = Papa.parse(text, {
-              header: true,
-              skipEmptyLines: true,
-              dynamicTyping: true,
-            });
-            manualClassificationData = parsed.data;
+            manualClassificationData = parseManualClassification(text);
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
         } catch (error) {
@@ -491,25 +501,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       diagnosticFigures.sort((a, b) => a.name.localeCompare(b.name));
 
       // Apply manual classifications if available
-      if (manualClassificationData && components.length > 0) {
-        components.forEach((component) => {
-          const manualEntry = manualClassificationData.find(
-            (m) => m.Component === component.Component
-          );
-          if (manualEntry) {
-            component.classification = manualEntry.classification;
-            if (manualEntry.original_classification) {
-              component.original_classification = manualEntry.original_classification;
-            }
-            if (manualEntry.classification_tags) {
-              component.classification_tags = manualEntry.classification_tags;
-            }
-            if (manualEntry.rationale) {
-              component.rationale = manualEntry.rationale;
-            }
-          }
-        });
-      }
+      applyManualClassifications(components, manualClassificationData);
 
       // Pass all data to parent at once - no delays!
       onDataLoad({
