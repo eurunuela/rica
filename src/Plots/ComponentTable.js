@@ -144,10 +144,9 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
 
   return (
     <div style={{ width: "80%", margin: "0 auto", padding: "16px 24px 24px 24px" }}>
-      {/* Collapsible header with toggle switch */}
+      {/* Header with Hide button, title, and component count */}
       <div
         id="component-metrics-toggle"
-        aria-label="Toggle component metrics table visibility"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -158,83 +157,26 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
           marginBottom: isCollapsed ? '0' : '12px',
         }}
       >
-        {/* Small toggle switch */}
-        <div
-          role="radiogroup"
-          aria-label="Toggle component metrics table"
+        {/* Hide button - single toggle, gray when off (table visible), green when active (table hidden) */}
+        <button
+          onClick={onToggleCollapse}
+          aria-pressed={isCollapsed}
           aria-controls="component-metrics-table"
+          aria-label="Hide component metrics table"
           style={{
-            position: 'relative',
-            height: '28px',
-            fontWeight: 600,
-            backgroundColor: isDark ? '#27272a' : '#e5e7eb',
-            borderRadius: '6px',
-            display: 'flex',
+            padding: '4px 10px',
+            fontSize: '11px',
+            fontWeight: 500,
+            borderRadius: '4px',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            backgroundColor: isCollapsed ? '#3b82f6' : (isDark ? '#3f3f46' : '#d1d5db'),
+            color: isCollapsed ? '#fff' : (isDark ? '#a1a1aa' : '#6b7280'),
           }}
         >
-          {['Show', 'Hide'].map((val) => {
-            // Clicking "Show" should show table (isCollapsed becomes false)
-            // Clicking "Hide" should hide table (isCollapsed becomes true)
-            const shouldShow = val === 'Show';
-            const isCurrentlyInDesiredState = shouldShow ? !isCollapsed : isCollapsed;
-
-            return (
-            <span
-              key={val}
-              role="radio"
-              aria-checked={(val === 'Show') === !isCollapsed}
-              aria-label={`${val} component metrics table`}
-              tabIndex={0}
-              onClick={() => {
-                // Only toggle if not already in desired state
-                if (!isCurrentlyInDesiredState) {
-                  onToggleCollapse();
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  if (!isCurrentlyInDesiredState) {
-                    onToggleCollapse();
-                  }
-                }
-              }}
-              style={{
-                position: 'relative',
-                zIndex: 10,
-                height: '28px',
-                width: '60px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'color 0.2s ease',
-                color: (val === 'Show') === !isCollapsed ? '#1f2937' : (isDark ? '#a1a1aa' : 'rgba(0,0,0,0.6)'),
-                fontSize: '12px',
-              }}
-            >
-              {val}
-            </span>
-          );
-          })}
-
-          <span
-            aria-hidden="true"
-            aria-expanded={!isCollapsed}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: isCollapsed ? '60px' : '0px',
-              zIndex: 0,
-              display: 'block',
-              height: '28px',
-              width: '60px',
-              borderRadius: '6px',
-              transition: 'all 0.2s ease',
-              background: isDark ? '#3b82f6' : '#60a5fa',
-            }}
-          />
-        </div>
+          Hide
+        </button>
 
         {/* Title and component count */}
         <span style={{

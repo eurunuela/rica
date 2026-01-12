@@ -643,33 +643,34 @@
     {
       "id": "toggle_interactive_static_view",
       "category": "interactivity",
-      "description": "Toggle between interactive Niivue brain maps and static PNG component images",
+      "description": "Single 'Static' button to toggle between interactive Niivue and static PNG views",
       "steps": [
         "Load a tedana folder containing NIfTI and mixing matrix files",
         "Navigate to the 'ICA' tab",
-        "Verify 'Interactive' and 'Static' toggle buttons appear above the brain viewer",
-        "Click 'Static' button to switch to static PNG display",
+        "Verify gray 'Static' button appears above the brain viewer",
+        "Click 'Static' button (turns blue when active)",
         "Verify component image displays as static PNG instead of Niivue viewer",
-        "Click 'Interactive' button to switch back to Niivue + time series + FFT display",
-        "Verify interactive views are restored with brain mosaic, time series, and spectrum"
+        "Click 'Static' button again (turns gray)",
+        "Verify interactive views are restored with brain mosaic, time series, and spectrum",
+        "Reload the page and verify Rica remembers your preference (stored in localStorage)"
       ],
       "passes": true
     },
     {
       "id": "collapsible_component_table",
       "category": "ui",
-      "description": "Collapse/expand the component metrics table using a visible toggle switch",
+      "description": "Single 'Hide' button to collapse/expand the component metrics table",
       "steps": [
         "Load a tedana folder",
         "Navigate to the 'ICA' tab",
-        "Verify 'Component Metrics' section has a 'Show/Hide' toggle switch and component count",
-        "Verify toggle shows 'Hide' when table is visible (blue indicator on 'Hide')",
-        "Click 'Show' option to collapse the table",
-        "Verify toggle slides to 'Show' and table smoothly collapses",
+        "Verify gray 'Hide' button appears next to 'Component Metrics' title",
+        "Click 'Hide' button (turns blue when active)",
+        "Verify table smoothly collapses",
         "Select a component from pie chart while table is collapsed",
         "Verify page does NOT auto-scroll to table (distraction eliminated)",
-        "Click 'Hide' to expand the table",
-        "Verify toggle slides to 'Hide' and table re-appears with smooth transition"
+        "Click 'Hide' button again (turns gray)",
+        "Verify table re-appears with smooth transition",
+        "Reload the page and verify Rica remembers your preference (stored in localStorage)"
       ],
       "passes": true
     },
@@ -684,6 +685,21 @@
         "Verify brain viewer, time series, and FFT use reduced dimensions",
         "Verify right panel uses responsive 50% width instead of fixed 800px",
         "Verify overall page height is reduced to better fit standard 1080p screens"
+      ],
+      "passes": true
+    },
+    {
+      "id": "keep_original_order_toggle",
+      "category": "interactivity",
+      "description": "Single 'Regroup' button to toggle between keeping components in place vs regrouping by new classification",
+      "steps": [
+        "Load a tedana folder",
+        "Navigate to the 'ICA' tab",
+        "Verify gray 'Regroup' button appears in top-right of pie chart",
+        "Reclassify a component and verify it stays in its original position (just changes color)",
+        "Click 'Regroup' button (turns blue when active)",
+        "Reclassify another component and verify it moves to new classification group",
+        "Reload the page and verify Rica remembers your preference (stored in localStorage)"
       ],
       "passes": true
     }

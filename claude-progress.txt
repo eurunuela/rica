@@ -1829,6 +1829,75 @@ The chevron-based collapse indicator was too subtle and not obviously clickable.
 
 ---
 
+## Session 15 - Simplified Toggle Buttons (2026-01-12)
+
+### Goals
+- Address user feedback: reclassified components moving to new classification group makes it hard to track progress
+- Simplify all toggle UIs to single buttons (gray when off, blue when active)
+- Persist all user preferences in localStorage
+
+### User Feedback
+From user: "After reclassifying a component it moves it to sit within either team green or team red, visually this is a nice touch, but it makes it quite tricky to see where you're up to when systematically working through the components. Would it be possible to leave them in place and just change their colour?"
+
+### Changes Made
+
+#### All Three Toggles Simplified to Single Buttons
+1. **Regroup button** (above pie chart):
+   - Gray by default (components keep original position)
+   - Blue when active (components regroup by new classification)
+   - Positioned in top-right corner of pie chart
+
+2. **Static button** (above brain viewer):
+   - Gray by default (interactive Niivue view)
+   - Blue when active (static PNG view)
+
+3. **Hide button** (above component table):
+   - Gray by default (table visible)
+   - Blue when active (table hidden)
+
+#### localStorage Persistence
+All three preferences are now persisted:
+- `rica-keep-original-order` - Regroup toggle (default: don't regroup)
+- `rica-use-static-view` - Static toggle (default: interactive)
+- `rica-table-collapsed` - Hide toggle (default: visible)
+
+### Technical Details
+```javascript
+// Single button pattern used for all three toggles
+<button
+  onClick={() => setState(!state)}
+  aria-pressed={state}
+  style={{
+    backgroundColor: state ? '#3b82f6' : (isDark ? '#3f3f46' : '#d1d5db'),
+    color: state ? '#fff' : (isDark ? '#a1a1aa' : '#6b7280'),
+  }}
+>
+  Label
+</button>
+```
+
+### UX Improvement Summary
+| Before | After |
+|--------|-------|
+| Two-option toggle switches | Single buttons (gray/blue) |
+| Only keepOriginalOrder persisted | All three preferences persisted |
+| Toggle below help text | Regroup button above pie chart |
+| Complex toggle switch UI | Simple, minimal buttons |
+
+### Build Status
+- Compiled successfully (-354 B from bundle - simpler UI)
+
+### Files Modified
+- `src/Plots/Plots.js` - Simplified all toggles, added localStorage persistence
+- `src/Plots/ComponentTable.js` - Simplified Hide toggle to single button
+
+### Features Updated
+- `keep_original_order_toggle`: Now a single "Regroup" button above pie chart
+- `toggle_interactive_static_view`: Now a single "Static" button
+- `collapsible_component_table`: Now a single "Hide" button
+
+---
+
 ## Template for Future Sessions
 
 ```

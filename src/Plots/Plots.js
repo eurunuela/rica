@@ -35,8 +35,39 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
   const [selectedClassification, setSelectedClassification] = useState("accepted");
   const [clickedElement, setClickedElement] = useState("");
   const [colormapSaturation, setColormapSaturation] = useState(0.25); // Default 25%
-  const [useStaticView, setUseStaticView] = useState(false); // Toggle for static PNG vs interactive Niivue
-  const [isTableCollapsed, setIsTableCollapsed] = useState(false); // Toggle for component table visibility
+
+  // Toggle for static PNG vs interactive Niivue - persisted to localStorage
+  const [useStaticView, setUseStaticView] = useState(() => {
+    const saved = localStorage.getItem('rica-use-static-view');
+    return saved === 'true';
+  });
+
+  // Toggle for component table visibility - persisted to localStorage
+  const [isTableCollapsed, setIsTableCollapsed] = useState(() => {
+    const saved = localStorage.getItem('rica-table-collapsed');
+    return saved === 'true';
+  });
+
+  // Toggle for keeping original order vs grouping by new classification
+  // Persisted to localStorage so Rica remembers the user's preference
+  // Default: true (keep original order, don't regroup)
+  const [keepOriginalOrder, setKeepOriginalOrder] = useState(() => {
+    const saved = localStorage.getItem('rica-keep-original-order');
+    return saved !== 'false'; // Default to true unless explicitly set to false
+  });
+
+  // Persist preferences to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('rica-keep-original-order', keepOriginalOrder.toString());
+  }, [keepOriginalOrder]);
+
+  useEffect(() => {
+    localStorage.setItem('rica-use-static-view', useStaticView.toString());
+  }, [useStaticView]);
+
+  useEffect(() => {
+    localStorage.setItem('rica-table-collapsed', isTableCollapsed.toString());
+  }, [isTableCollapsed]);
 
   // Check if we have the new interactive visualization data
   const hasInteractiveViews = mixingMatrix?.data && niftiBuffer;
@@ -96,6 +127,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
     assignColor(compData);
 
     // Create unified data structure
+    // Store originalClassification so we can optionally sort by it later
     const processed = compData.map((d, i) => ({
       label: d.Component,
       kappa: d.kappa,
@@ -104,6 +136,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
       rhoRank: d["rho rank"],
       variance: d["variance explained"],
       classification: d.classification,
+      originalClassification: d.classification, // Store original for "keep original order" feature
       originalIndex: i,
     }));
 
@@ -171,6 +204,8 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
 
   // Prepare pie chart data (sorted by classification, then variance descending)
   // Defined here so keyboard navigation can use it
+  // When keepOriginalOrder is true, components stay grouped by their ORIGINAL classification
+  // (so reclassified components don't move, they just change color)
   const pieData = useMemo(() => {
     if (!processedData.length) return [];
 
@@ -181,9 +216,12 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
     const withOriginalIndex = processedData.map((d, i) => ({ ...d, originalIdx: i }));
 
     // Sort for pie display: group by classification, then by variance (highest first)
+    // Use originalClassification when keepOriginalOrder is true so components don't move
     const sorted = [...withOriginalIndex].sort((a, b) => {
-      const orderA = classificationOrder[a.classification] ?? 3;
-      const orderB = classificationOrder[b.classification] ?? 3;
+      const classA = keepOriginalOrder ? a.originalClassification : a.classification;
+      const classB = keepOriginalOrder ? b.originalClassification : b.classification;
+      const orderA = classificationOrder[classA] ?? 3;
+      const orderB = classificationOrder[classB] ?? 3;
       if (orderA !== orderB) return orderA - orderB;
       return b.variance - a.variance; // Highest variance first within each group
     });
@@ -193,7 +231,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
       value: d.variance,
       pieIndex: d.originalIdx,
     }));
-  }, [processedData]);
+  }, [processedData, keepOriginalOrder]);
 
   // Find selected index in pie data
   const selectedPieIndex = useMemo(() => {
@@ -379,16 +417,41 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
                   showDiagonal={true}
                 />
 
-                {/* Variance Pie Chart */}
-                <PieChart
-                  data={pieData}
-                  width={CHART_WIDTH}
-                  height={CHART_HEIGHT}
-                  title="Variance Explained"
-                  selectedIndex={selectedPieIndex}
-                  onSliceClick={handlePieClick}
-                  isDark={isDark}
-                />
+                {/* Variance Pie Chart with Regroup button */}
+                <div style={{ position: 'relative' }}>
+                  {/* Regroup button - positioned above pie chart */}
+                  <button
+                    onClick={() => setKeepOriginalOrder(!keepOriginalOrder)}
+                    aria-pressed={!keepOriginalOrder}
+                    aria-label="Regroup reclassified components by new classification"
+                    style={{
+                      position: 'absolute',
+                      top: '4px',
+                      right: '4px',
+                      zIndex: 10,
+                      padding: '4px 10px',
+                      fontSize: '11px',
+                      fontWeight: 500,
+                      borderRadius: '4px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      backgroundColor: !keepOriginalOrder ? '#3b82f6' : (isDark ? '#3f3f46' : '#d1d5db'),
+                      color: !keepOriginalOrder ? '#fff' : (isDark ? '#a1a1aa' : '#6b7280'),
+                    }}
+                  >
+                    Regroup
+                  </button>
+                  <PieChart
+                    data={pieData}
+                    width={CHART_WIDTH}
+                    height={CHART_HEIGHT}
+                    title="Variance Explained"
+                    selectedIndex={selectedPieIndex}
+                    onSliceClick={handlePieClick}
+                    isDark={isDark}
+                  />
+                </div>
 
                 {/* Rho vs Rank scatter plot */}
                 <ScatterPlot
@@ -437,81 +500,33 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
             gap: '6px'
           }}
         >
-          {/* View toggle - matches ToggleSwitch styling pattern */}
+          {/* Static button - single toggle, gray when off, green when active */}
           {hasInteractiveViews && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              marginBottom: '4px',
-            }}>
-              <span id="view-toggle-label" style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>View:</span>
-              <div
-                role="radiogroup"
-                aria-labelledby="view-toggle-label"
-                style={{
-                  position: 'relative',
-                  height: '32px',
-                  fontWeight: 600,
-                  backgroundColor: isDark ? '#27272a' : '#e5e7eb',
-                  borderRadius: '8px',
-                  display: 'flex',
-                }}
-              >
-                {['Interactive', 'Static'].map((val) => (
-                  <span
-                    key={val}
-                    role="radio"
-                    aria-checked={(val === 'Static') === useStaticView}
-                    aria-label={`Switch to ${val.toLowerCase()} view`}
-                    tabIndex={0}
-                    onClick={() => setUseStaticView(val === 'Static')}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setUseStaticView(val === 'Static');
-                      }
-                    }}
-                    style={{
-                      position: 'relative',
-                      zIndex: 10,
-                      height: '32px',
-                      width: '80px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      transition: 'color 0.2s ease',
-                      color: (val === 'Static') === useStaticView ? '#1f2937' : (isDark ? '#a1a1aa' : 'rgba(0,0,0,0.6)'),
-                      fontSize: '12px',
-                    }}
-                  >
-                    {val}
-                  </span>
-                ))}
-                <span
-                  aria-hidden="true"
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: useStaticView ? '80px' : '0px',
-                    zIndex: 0,
-                    display: 'block',
-                    height: '32px',
-                    width: '80px',
-                    borderRadius: '8px',
-                    transition: 'all 0.2s ease',
-                    background: isDark ? '#3b82f6' : '#60a5fa',
-                  }}
-                />
-              </div>
-            </div>
+            <button
+              onClick={() => setUseStaticView(!useStaticView)}
+              aria-pressed={useStaticView}
+              aria-label="Switch to static PNG view"
+              style={{
+                padding: '4px 10px',
+                fontSize: '11px',
+                fontWeight: 500,
+                borderRadius: '4px',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                marginBottom: '4px',
+                backgroundColor: useStaticView ? '#3b82f6' : (isDark ? '#3f3f46' : '#d1d5db'),
+                color: useStaticView ? '#fff' : (isDark ? '#a1a1aa' : '#6b7280'),
+              }}
+            >
+              Static
+            </button>
           )}
 
           {hasInteractiveViews && !useStaticView ? (
             <>
               {/* Time series on top */}
-              <div style={{ width: '100%' }}>
+              <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
                 <TimeSeries
                   data={currentTimeSeries}
                   width={750}
@@ -524,7 +539,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
               </div>
 
               {/* Brain stat map viewer in middle */}
-              <div style={{ width: '100%' }}>
+              <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
                 <BrainViewer
                   niftiBuffer={niftiBuffer}
                   maskBuffer={maskBuffer}
@@ -573,7 +588,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
               </div>
 
               {/* FFT on bottom */}
-              <div style={{ width: '100%' }}>
+              <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
                 <FFTSpectrum
                   timeSeries={currentTimeSeries}
                   width={750}
