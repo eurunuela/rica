@@ -9,12 +9,13 @@ import FFTSpectrum from "./FFTSpectrum";
 import BrainViewer from "./BrainViewer";
 import ComponentTable from "./ComponentTable";
 import CorrelationHeatmap from "./CorrelationHeatmap";
+import CitationPopUp from "../PopUps/CitationPopUp";
 import { assignColor, formatComponentName } from "./PlotUtils";
 
 // Chart dimensions - sized to fit 2x2 in half screen width
-// Each chart takes ~45% of half the screen width (with gap)
-const CHART_WIDTH = 420;
-const CHART_HEIGHT = 380;
+// Reduced for better screen fit (was 420x380)
+const CHART_WIDTH = 360;
+const CHART_HEIGHT = 320;
 
 // Theme-aware colors
 const getColors = (isDark) => ({
@@ -35,6 +36,42 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
   const [selectedClassification, setSelectedClassification] = useState("accepted");
   const [clickedElement, setClickedElement] = useState("");
   const [colormapSaturation, setColormapSaturation] = useState(0.25); // Default 25%
+
+  // Toggle for static PNG vs interactive Niivue - persisted to localStorage
+  const [useStaticView, setUseStaticView] = useState(() => {
+    const saved = localStorage.getItem('rica-use-static-view');
+    return saved === 'true';
+  });
+
+  // Toggle for component table visibility - persisted to localStorage
+  const [isTableCollapsed, setIsTableCollapsed] = useState(() => {
+    const saved = localStorage.getItem('rica-table-collapsed');
+    return saved === 'true';
+  });
+
+  // Citation popup state - shown after saving
+  const [showCitationPopup, setShowCitationPopup] = useState(false);
+
+  // Toggle for keeping original order vs grouping by new classification
+  // Persisted to localStorage so Rica remembers the user's preference
+  // Default: true (keep original order, don't regroup)
+  const [keepOriginalOrder, setKeepOriginalOrder] = useState(() => {
+    const saved = localStorage.getItem('rica-keep-original-order');
+    return saved !== 'false'; // Default to true unless explicitly set to false
+  });
+
+  // Persist preferences to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('rica-keep-original-order', keepOriginalOrder.toString());
+  }, [keepOriginalOrder]);
+
+  useEffect(() => {
+    localStorage.setItem('rica-use-static-view', useStaticView.toString());
+  }, [useStaticView]);
+
+  useEffect(() => {
+    localStorage.setItem('rica-table-collapsed', isTableCollapsed.toString());
+  }, [isTableCollapsed]);
 
   // Check if we have the new interactive visualization data
   const hasInteractiveViews = mixingMatrix?.data && niftiBuffer;
@@ -94,6 +131,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
     assignColor(compData);
 
     // Create unified data structure
+    // Store originalClassification so we can optionally sort by it later
     const processed = compData.map((d, i) => ({
       label: d.Component,
       kappa: d.kappa,
@@ -102,6 +140,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
       rhoRank: d["rho rank"],
       variance: d["variance explained"],
       classification: d.classification,
+      originalClassification: d.classification, // Store original for "keep original order" feature
       originalIndex: i,
     }));
 
@@ -169,6 +208,8 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
 
   // Prepare pie chart data (sorted by classification, then variance descending)
   // Defined here so keyboard navigation can use it
+  // When keepOriginalOrder is true, components stay grouped by their ORIGINAL classification
+  // (so reclassified components don't move, they just change color)
   const pieData = useMemo(() => {
     if (!processedData.length) return [];
 
@@ -179,9 +220,12 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
     const withOriginalIndex = processedData.map((d, i) => ({ ...d, originalIdx: i }));
 
     // Sort for pie display: group by classification, then by variance (highest first)
+    // Use originalClassification when keepOriginalOrder is true so components don't move
     const sorted = [...withOriginalIndex].sort((a, b) => {
-      const orderA = classificationOrder[a.classification] ?? 3;
-      const orderB = classificationOrder[b.classification] ?? 3;
+      const classA = keepOriginalOrder ? a.originalClassification : a.classification;
+      const classB = keepOriginalOrder ? b.originalClassification : b.classification;
+      const orderA = classificationOrder[classA] ?? 3;
+      const orderB = classificationOrder[classB] ?? 3;
       if (orderA !== orderB) return orderA - orderB;
       return b.variance - a.variance; // Highest variance first within each group
     });
@@ -191,7 +235,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
       value: d.variance,
       pieIndex: d.originalIdx,
     }));
-  }, [processedData]);
+  }, [processedData, keepOriginalOrder]);
 
   // Find selected index in pie data
   const selectedPieIndex = useMemo(() => {
@@ -293,6 +337,9 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
     downloadFile(accepted.join(","), "accepted.txt");
     downloadFile(rejected.join(","), "rejected.txt");
     downloadFile(tsv, "manual_classification.tsv", "text/tab-separated-values");
+
+    // Show citation popup after save
+    setShowCitationPopup(true);
   }, [originalData, processedData]);
 
   // Handle pie slice click - map back to original index
@@ -377,16 +424,41 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
                   showDiagonal={true}
                 />
 
-                {/* Variance Pie Chart */}
-                <PieChart
-                  data={pieData}
-                  width={CHART_WIDTH}
-                  height={CHART_HEIGHT}
-                  title="Variance Explained"
-                  selectedIndex={selectedPieIndex}
-                  onSliceClick={handlePieClick}
-                  isDark={isDark}
-                />
+                {/* Variance Pie Chart with Regroup button */}
+                <div style={{ position: 'relative' }}>
+                  {/* Regroup button - positioned above pie chart */}
+                  <button
+                    onClick={() => setKeepOriginalOrder(!keepOriginalOrder)}
+                    aria-pressed={!keepOriginalOrder}
+                    aria-label="Regroup reclassified components by new classification"
+                    style={{
+                      position: 'absolute',
+                      top: '4px',
+                      right: '4px',
+                      zIndex: 10,
+                      padding: '4px 10px',
+                      fontSize: '11px',
+                      fontWeight: 500,
+                      borderRadius: '4px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      backgroundColor: !keepOriginalOrder ? '#3b82f6' : (isDark ? '#3f3f46' : '#d1d5db'),
+                      color: !keepOriginalOrder ? '#fff' : (isDark ? '#a1a1aa' : '#6b7280'),
+                    }}
+                  >
+                    Regroup
+                  </button>
+                  <PieChart
+                    data={pieData}
+                    width={CHART_WIDTH}
+                    height={CHART_HEIGHT}
+                    title="Variance Explained"
+                    selectedIndex={selectedPieIndex}
+                    onSliceClick={handlePieClick}
+                    isDark={isDark}
+                  />
+                </div>
 
                 {/* Rho vs Rank scatter plot */}
                 <ScatterPlot
@@ -424,24 +496,48 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
               </div>
             </div>
 
-        {/* Right side: Component visualization - 800px to match charts */}
+        {/* Right side: Component visualization - 50% width to match left */}
         <div
           style={{
-            width: '800px',
+            width: '50%',
+            maxWidth: '800px',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px'
           }}
         >
-          {hasInteractiveViews ? (
+          {/* Static button - single toggle, gray when off, green when active */}
+          {hasInteractiveViews && (
+            <button
+              onClick={() => setUseStaticView(!useStaticView)}
+              aria-pressed={useStaticView}
+              aria-label="Switch to static PNG view"
+              style={{
+                padding: '4px 10px',
+                fontSize: '11px',
+                fontWeight: 500,
+                borderRadius: '4px',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                marginBottom: '4px',
+                backgroundColor: useStaticView ? '#3b82f6' : (isDark ? '#3f3f46' : '#d1d5db'),
+                color: useStaticView ? '#fff' : (isDark ? '#a1a1aa' : '#6b7280'),
+              }}
+            >
+              Static
+            </button>
+          )}
+
+          {hasInteractiveViews && !useStaticView ? (
             <>
               {/* Time series on top */}
-              <div style={{ width: '100%' }}>
+              <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
                 <TimeSeries
                   data={currentTimeSeries}
-                  width={800}
-                  height={180}
+                  width={750}
+                  height={150}
                   title="Time Series"
                   componentLabel={currentComponentLabel}
                   lineColor={selectedClassification === 'accepted' ? getColors(isDark).acceptedHover : getColors(isDark).rejectedHover}
@@ -450,13 +546,13 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
               </div>
 
               {/* Brain stat map viewer in middle */}
-              <div style={{ width: '100%' }}>
+              <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
                 <BrainViewer
                   niftiBuffer={niftiBuffer}
                   maskBuffer={maskBuffer}
                   componentIndex={selectedIndex}
-                  width={800}
-                  height={350}
+                  width={750}
+                  height={280}
                   componentLabel={currentComponentLabel}
                   saturation={colormapSaturation}
                   isDark={isDark}
@@ -465,23 +561,29 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
 
               {/* Saturation slider */}
               <div style={{
-                width: '800px',
+                width: '100%',
+                maxWidth: '750px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '12px',
-                padding: '8px 0',
+                padding: '4px 0',
               }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Saturation:</span>
+                <label htmlFor="saturation-slider" style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Saturation:</label>
                 <input
+                  id="saturation-slider"
                   type="range"
                   min="1"
                   max="100"
                   value={colormapSaturation * 100}
                   onChange={(e) => setColormapSaturation(parseFloat(e.target.value) / 100)}
+                  aria-label="Adjust brain map colormap saturation"
+                  aria-valuemin={1}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(colormapSaturation * 100)}
                   className="focus:outline-none"
                   style={{
-                    width: '400px',
+                    width: '300px',
                     cursor: 'pointer',
                     accentColor: '#3b82f6',
                     outline: 'none',
@@ -493,11 +595,11 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
               </div>
 
               {/* FFT on bottom */}
-              <div style={{ width: '100%' }}>
+              <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
                 <FFTSpectrum
                   timeSeries={currentTimeSeries}
-                  width={800}
-                  height={180}
+                  width={750}
+                  height={150}
                   title="Power Spectrum"
                   sampleRate={1}
                   lineColor={selectedClassification === 'accepted' ? getColors(isDark).acceptedHover : getColors(isDark).rejectedHover}
@@ -506,25 +608,28 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
               </div>
             </>
           ) : (
-            /* Fallback to existing PNG display */
+            /* Static PNG display - either by choice or fallback */
             clickedElement && (
               <img
                 className="max-w-full h-auto rounded-lg shadow-lg"
                 alt="Component visualization"
                 src={clickedElement}
+                style={{ maxHeight: '600px' }}
               />
             )
           )}
         </div>
       </div>
 
-      {/* Component table - full width below charts */}
+      {/* Component table - full width below charts (collapsible) */}
       <ComponentTable
         data={componentData?.[0] || []}
         selectedIndex={selectedIndex}
         onRowClick={handlePointClick}
         classifications={processedData.map((d) => d.classification)}
         isDark={isDark}
+        isCollapsed={isTableCollapsed}
+        onToggleCollapse={() => setIsTableCollapsed(!isTableCollapsed)}
       />
 
       {/* External Regressors Correlation Heatmap (interactive) or static figure */}
@@ -573,6 +678,14 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
             </>
           )}
         </div>
+      )}
+
+      {/* Citation popup - shown after saving */}
+      {showCitationPopup && (
+        <CitationPopUp
+          closePopup={() => setShowCitationPopup(false)}
+          isDark={isDark}
+        />
       )}
     </div>
   );

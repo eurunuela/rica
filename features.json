@@ -1,8 +1,8 @@
 {
   "projectName": "rica",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "React-based interactive visualization tool for multi-echo fMRI ICA component analysis",
-  "lastUpdated": "2026-01-10",
+  "lastUpdated": "2026-01-12",
   "modernizationNotes": "v2.0.0 - Upgraded to React 18, functional components, removed 5s loading delay, added progress indicator, Notion-style popups",
   "features": [
     {
@@ -637,6 +637,109 @@
         "Hover over cells to see correlation values in tooltip",
         "Click cells to select corresponding component (syncs with all charts)",
         "Falls back to static SVG if correlation columns not in metrics TSV"
+      ],
+      "passes": true
+    },
+    {
+      "id": "toggle_interactive_static_view",
+      "category": "interactivity",
+      "description": "Single 'Static' button to toggle between interactive Niivue and static PNG views",
+      "steps": [
+        "Load a tedana folder containing NIfTI and mixing matrix files",
+        "Navigate to the 'ICA' tab",
+        "Verify gray 'Static' button appears above the brain viewer",
+        "Click 'Static' button (turns blue when active)",
+        "Verify component image displays as static PNG instead of Niivue viewer",
+        "Click 'Static' button again (turns gray)",
+        "Verify interactive views are restored with brain mosaic, time series, and spectrum",
+        "Reload the page and verify Rica remembers your preference (stored in localStorage)"
+      ],
+      "passes": true
+    },
+    {
+      "id": "collapsible_component_table",
+      "category": "ui",
+      "description": "Single 'Hide' button to collapse/expand the component metrics table",
+      "steps": [
+        "Load a tedana folder",
+        "Navigate to the 'ICA' tab",
+        "Verify gray 'Hide' button appears next to 'Component Metrics' title",
+        "Click 'Hide' button (turns blue when active)",
+        "Verify table smoothly collapses",
+        "Select a component from pie chart while table is collapsed",
+        "Verify page does NOT auto-scroll to table (distraction eliminated)",
+        "Click 'Hide' button again (turns gray)",
+        "Verify table re-appears with smooth transition",
+        "Reload the page and verify Rica remembers your preference (stored in localStorage)"
+      ],
+      "passes": true
+    },
+    {
+      "id": "compact_layout",
+      "category": "ui",
+      "description": "Compact layout with reduced chart dimensions for better screen fit",
+      "steps": [
+        "Load a tedana folder",
+        "Navigate to the 'ICA' tab",
+        "Verify scatter plots and pie chart use reduced dimensions (360x320px)",
+        "Verify brain viewer, time series, and FFT use reduced dimensions",
+        "Verify right panel uses responsive 50% width instead of fixed 800px",
+        "Verify overall page height is reduced to better fit standard 1080p screens"
+      ],
+      "passes": true
+    },
+    {
+      "id": "keep_original_order_toggle",
+      "category": "interactivity",
+      "description": "Single 'Regroup' button to toggle between keeping components in place vs regrouping by new classification",
+      "steps": [
+        "Load a tedana folder",
+        "Navigate to the 'ICA' tab",
+        "Verify gray 'Regroup' button appears in top-right of pie chart",
+        "Reclassify a component and verify it stays in its original position (just changes color)",
+        "Click 'Regroup' button (turns blue when active)",
+        "Reclassify another component and verify it moves to new classification group",
+        "Reload the page and verify Rica remembers your preference (stored in localStorage)"
+      ],
+      "passes": true
+    },
+    {
+      "id": "changelog_popup",
+      "category": "ui",
+      "description": "Display changelog popup with GitHub releases, auto-shown on new version",
+      "steps": [
+        "Load a tedana folder",
+        "Verify bell icon button appears in navbar next to the About (?) button",
+        "Click the bell icon button",
+        "Verify 'What's New' popup appears with current version displayed",
+        "Verify popup shows recent releases fetched from GitHub API",
+        "Verify each release shows version tag, date, release name, and description",
+        "Verify 'Latest' badge appears on the most recent release",
+        "Click 'View on GitHub' link on any release to open in new tab",
+        "Click 'View All Releases' button to open GitHub releases page",
+        "Close popup and reload the page",
+        "On first load with a new version, verify changelog popup auto-shows",
+        "After viewing, the popup should not auto-show again for same version (stored in localStorage as 'rica-last-seen-version')"
+      ],
+      "passes": true
+    },
+    {
+      "id": "citation_popup",
+      "category": "ui",
+      "description": "Display citation popup with Zenodo DOI after saving manual classification",
+      "steps": [
+        "Load a tedana folder",
+        "Navigate to the ICA tab",
+        "Make at least one classification change",
+        "Click the 'Save' button",
+        "Verify three files download (accepted.txt, rejected.txt, manual_classification.tsv)",
+        "Verify 'Cite Rica' popup appears automatically after save",
+        "Verify popup shows success message 'Classification saved successfully!'",
+        "Verify citation text is displayed with authors, year, version, and DOI",
+        "Verify Zenodo DOI badge is displayed",
+        "Click 'Copy' button and verify citation is copied to clipboard",
+        "Click 'View on Zenodo' button to open Zenodo page in new tab",
+        "Click 'Done' or click outside popup to close"
       ],
       "passes": true
     }

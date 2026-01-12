@@ -66,12 +66,13 @@ const DISPLAY_COLUMNS = [
   "classification_tags",
 ];
 
-function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDark = false }) {
+function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDark = false, isCollapsed = false, onToggleCollapse }) {
   const selectedRowRef = useRef(null);
   const tableContainerRef = useRef(null);
 
-  // Scroll selected row into view when selection changes
+  // Scroll selected row into view when selection changes (only if not collapsed)
   useEffect(() => {
+    if (isCollapsed) return; // Don't auto-scroll when collapsed
     if (selectedRowRef.current && tableContainerRef.current) {
       const container = tableContainerRef.current;
       const row = selectedRowRef.current;
@@ -88,7 +89,7 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
         });
       }
     }
-  }, [selectedIndex]);
+  }, [selectedIndex, isCollapsed]);
 
   // Determine which columns exist in the data
   const columns = useMemo(() => {
@@ -143,25 +144,74 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
 
   return (
     <div style={{ width: "80%", margin: "0 auto", padding: "16px 24px 24px 24px" }}>
-      <h3 style={{
-        textAlign: 'center',
-        fontSize: '18px',
-        fontWeight: 600,
-        color: 'var(--text-primary)',
-        marginBottom: '12px',
-      }}>
-        Component Metrics
-      </h3>
+      {/* Header with Hide button, title, and component count */}
       <div
+        id="component-metrics-toggle"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '12px',
+          width: '100%',
+          padding: '8px 12px',
+          marginBottom: isCollapsed ? '0' : '12px',
+        }}
+      >
+        {/* Hide button - single toggle, gray when off (table visible), green when active (table hidden) */}
+        <button
+          onClick={onToggleCollapse}
+          aria-pressed={isCollapsed}
+          aria-controls="component-metrics-table"
+          aria-label="Hide component metrics table"
+          style={{
+            padding: '4px 10px',
+            fontSize: '11px',
+            fontWeight: 500,
+            borderRadius: '4px',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            backgroundColor: isCollapsed ? '#3b82f6' : (isDark ? '#3f3f46' : '#d1d5db'),
+            color: isCollapsed ? '#fff' : (isDark ? '#a1a1aa' : '#6b7280'),
+          }}
+        >
+          Hide
+        </button>
+
+        {/* Title and component count */}
+        <span style={{
+          fontSize: '16px',
+          fontWeight: 600,
+          color: 'var(--text-primary)',
+        }}>
+          Component Metrics
+        </span>
+        <span style={{
+          fontSize: '12px',
+          fontWeight: 400,
+          color: 'var(--text-tertiary)',
+        }}>
+          ({data.length} components)
+        </span>
+      </div>
+
+      {/* Collapsible table container */}
+      <div
+        id="component-metrics-table"
+        role="region"
+        aria-labelledby="component-metrics-toggle"
+        aria-hidden={isCollapsed}
         ref={tableContainerRef}
         style={{
-          maxHeight: "350px",
-          overflowY: "auto",
-          overflowX: "auto",
+          maxHeight: isCollapsed ? '0' : '350px',
+          overflowY: isCollapsed ? 'hidden' : 'auto',
+          overflowX: isCollapsed ? 'hidden' : 'auto',
           margin: "0 8px",
           borderRadius: '12px',
-          border: `1px solid ${borderColor}`,
+          border: isCollapsed ? 'none' : `1px solid ${borderColor}`,
           backgroundColor: 'var(--bg-secondary)',
+          transition: 'max-height 0.3s ease, opacity 0.3s ease',
+          opacity: isCollapsed ? 0 : 1,
         }}
       >
         <table style={{ width: '100%', fontSize: '13px', borderCollapse: "separate", borderSpacing: "0" }}>

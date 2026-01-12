@@ -4,6 +4,7 @@ import { HelmetProvider, Helmet } from "react-helmet-async";
 
 import IntroPopup from "./PopUps/IntroPopUp";
 import AboutPopup from "./PopUps/AboutPopUp";
+import ChangelogPopup from "./PopUps/ChangelogPopUp";
 import MobileMain from "./Mobile";
 
 import "./styles/output.css";
@@ -12,6 +13,7 @@ import "./styles.css";
 import { TabList, TabPanels, TabPanel } from "./TabComponents";
 import { AnimatedTab, AnimatedTabs } from "./TabFunctions";
 import { LOGO_DATA_URL } from "./constants/logo";
+import { VERSION } from "./constants/version";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faInfoCircle,
@@ -22,6 +24,7 @@ import {
   faSun,
   faMoon,
   faHeartPulse,
+  faBell,
 } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
@@ -31,7 +34,7 @@ import Carpets from "./Carpets/Carpets";
 import Info from "./Info/Info";
 import Diagnostics from "./Diagnostics/Diagnostics";
 
-library.add(faInfoCircle, faLayerGroup, faChartPie, faPlus, faQuestion, faSun, faMoon, faHeartPulse);
+library.add(faInfoCircle, faLayerGroup, faChartPie, faPlus, faQuestion, faSun, faMoon, faHeartPulse, faBell);
 
 // Theme context
 const ThemeContext = React.createContext();
@@ -48,6 +51,7 @@ function App() {
   const [info, setInfo] = useState([]);
   const [showIntroPopup, setShowIntroPopup] = useState(true);
   const [showAboutPopup, setShowAboutPopup] = useState(false);
+  const [showChangelogPopup, setShowChangelogPopup] = useState(false);
   const [showTabs, setShowTabs] = useState(false);
   const [originalData, setOriginalData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -124,6 +128,26 @@ function App() {
     setShowAboutPopup((prev) => !prev);
   }, []);
 
+  const toggleChangelogPopup = useCallback(() => {
+    setShowChangelogPopup((prev) => !prev);
+  }, []);
+
+  // Mark version as seen in localStorage
+  const handleVersionSeen = useCallback((version) => {
+    localStorage.setItem("rica-last-seen-version", version);
+  }, []);
+
+  // Check if we should show changelog on new version (after data is loaded)
+  useEffect(() => {
+    if (showTabs && !showIntroPopup) {
+      const lastSeenVersion = localStorage.getItem("rica-last-seen-version");
+      if (lastSeenVersion !== VERSION) {
+        // Show changelog for new version
+        setShowChangelogPopup(true);
+      }
+    }
+  }, [showTabs, showIntroPopup]);
+
   // Called when data loading starts
   const onLoadingStart = useCallback(() => {
     setIsLoading(true);
@@ -177,6 +201,13 @@ function App() {
             />
           )}
           {showAboutPopup && <AboutPopup closePopup={toggleAboutPopup} isDark={isDark} />}
+          {showChangelogPopup && (
+            <ChangelogPopup
+              closePopup={toggleChangelogPopup}
+              isDark={isDark}
+              onVersionSeen={handleVersionSeen}
+            />
+          )}
           {showTabs && (
             <AnimatedTabs defaultIndex={0}>
               {/* Minimal Modern Navbar */}
@@ -316,6 +347,34 @@ function App() {
                       <span>New</span>
                     </button>
                   )}
+                  <button
+                    onClick={toggleChangelogPopup}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: "36px",
+                      height: "36px",
+                      fontSize: "13px",
+                      color: "var(--text-secondary)",
+                      backgroundColor: "transparent",
+                      border: "1px solid var(--border-default)",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "var(--bg-tertiary)";
+                      e.currentTarget.style.color = "var(--text-primary)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.color = "var(--text-secondary)";
+                    }}
+                    title="What's New"
+                  >
+                    <FontAwesomeIcon icon={faBell} />
+                  </button>
                   <button
                     onClick={toggleAboutPopup}
                     style={{

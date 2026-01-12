@@ -1659,6 +1659,429 @@ import { VERSION_DISPLAY } from "./constants/version";
 
 ---
 
+## Session 14 - UX Improvements: Toggle and Collapsible Table (2026-01-11)
+
+### Goals
+- Implement user feedback from Neurostars forum post
+- Add toggle between interactive (Niivue) and static (PNG) brain map visualization
+- Make component table collapsible to reduce auto-scroll distraction
+- Reduce layout dimensions for better screen fit
+
+### User Feedback Addressed
+From https://neurostars.org/t/new-version-of-rica/34989/2:
+1. User wanted ability to toggle between new and previous visualization methods
+2. Auto-scroll behavior when selecting from pie chart was distracting
+3. Interface too large for comfortable single-screen viewing
+
+### Changes Made
+
+#### src/Plots/Plots.js
+1. **Added state for view toggle and table collapse**:
+   - `useStaticView` state - Toggle between interactive Niivue and static PNG
+   - `isTableCollapsed` state - Track component table collapse state
+
+2. **Reduced chart dimensions for better screen fit**:
+   - `CHART_WIDTH`: 420px → 360px
+   - `CHART_HEIGHT`: 380px → 320px
+   - TimeSeries/FFTSpectrum height: 180px → 150px
+   - BrainViewer height: 350px → 280px
+   - Right panel width: Fixed 800px → 50% (max 800px)
+
+3. **Added View toggle buttons**:
+   - "Interactive" and "Static" buttons above brain viewer
+   - Only shown when interactive data is available
+   - Blue highlight for active selection
+
+4. **Updated ComponentTable props**:
+   - Pass `isCollapsed` and `onToggleCollapse` props
+
+#### src/Plots/ComponentTable.js
+1. **Added collapsible functionality**:
+   - Import FontAwesome chevron icon
+   - Accept `isCollapsed` and `onToggleCollapse` props
+   - Added clickable header button with chevron that rotates when collapsed
+   - Shows component count in header
+   - Smooth CSS transition for collapse/expand animation
+
+2. **Modified auto-scroll behavior**:
+   - Auto-scroll disabled when table is collapsed
+   - Prevents page jump when selecting components from pie chart while collapsed
+
+### Technical Details
+
+**View Toggle Pattern:**
+```javascript
+{hasInteractiveViews && (
+  <div>
+    <button onClick={() => setUseStaticView(false)}>Interactive</button>
+    <button onClick={() => setUseStaticView(true)}>Static</button>
+  </div>
+)}
+```
+
+**Collapsible Table Pattern:**
+```javascript
+<button onClick={onToggleCollapse}>
+  <FontAwesomeIcon
+    icon={faChevronDown}
+    style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
+  />
+  Component Metrics ({data.length} components)
+</button>
+<div style={{ maxHeight: isCollapsed ? '0' : '350px', opacity: isCollapsed ? 0 : 1 }}>
+  {/* table content */}
+</div>
+```
+
+### Files Modified
+- `src/Plots/Plots.js` - View toggle, reduced dimensions, table collapse state
+- `src/Plots/ComponentTable.js` - Collapsible header, disabled auto-scroll when collapsed
+
+### Build Status
+- Compiled successfully (+418 B to main bundle)
+
+### UX Improvements Summary
+| Before | After |
+|--------|-------|
+| Fixed interactive-only view | Toggle between Interactive/Static |
+| Always-visible table with auto-scroll | Collapsible table, no scroll when collapsed |
+| 420x380px charts, 800px right panel | 360x320px charts, 50% responsive right panel |
+| ~2000px+ page height | ~1600px page height (fits better on 1080p screens) |
+
+### Session 14.1 - Accessibility Improvements (2026-01-11)
+
+Addressed Copilot PR review comments for accessibility:
+
+**View Toggle (Plots.js):**
+- Added `role="radiogroup"` and `aria-labelledby` to toggle container
+- Added `role="radio"`, `aria-checked`, `aria-label` to each option
+- Added `tabIndex={0}` and keyboard support (Enter/Space)
+- Added `aria-hidden="true"` to decorative sliding indicator
+
+**Saturation Slider (Plots.js):**
+- Changed `<span>` label to `<label>` with `htmlFor`
+- Added `id="saturation-slider"` to input
+- Added `aria-label`, `aria-valuemin`, `aria-valuemax`, `aria-valuenow`
+
+**Collapsible Table (ComponentTable.js):**
+- Added `id`, `aria-expanded`, `aria-controls`, `aria-label` to toggle button
+- Added `aria-hidden="true"` to chevron icon
+- Added `id`, `role="region"`, `aria-labelledby`, `aria-hidden` to table container
+- Fixed transition timing: opacity 0.2s → 0.3s (matches maxHeight)
+
+---
+
+## Session 14.2 - Improved Collapsible Table UX (2026-01-12)
+
+### Goals
+- Make it more obvious that the component metrics table can be collapsed/expanded
+- Maintain consistency with existing UI design patterns
+
+### User Feedback
+The chevron-based collapse indicator was too subtle and not obviously clickable.
+
+### Changes Made
+
+#### src/Plots/ComponentTable.js
+1. **Replaced chevron with toggle switch**: Removed the small 12px chevron icon that rotated when collapsed
+2. **Added pill-style toggle**: Implemented a "Show" / "Hide" toggle switch matching the Interactive/Static pattern:
+   - 120px total width (60px per option)
+   - 28px height (smaller than main toggle switches for subtlety)
+   - Blue sliding indicator (#3b82f6 dark mode, #60a5fa light mode)
+   - Theme-aware colors for light/dark modes
+3. **Improved layout**:
+   - Toggle switch on the left
+   - "Component Metrics" title in the center
+   - Component count on the right
+4. **Maintained accessibility**:
+   - `role="radiogroup"` and `role="radio"` for screen readers
+   - `aria-checked`, `aria-controls`, `aria-expanded` attributes
+   - Keyboard support (Enter/Space keys)
+   - Proper ARIA labels
+
+### Technical Details
+```javascript
+// Toggle switch matches existing pattern
+<div role="radiogroup" style={{
+  height: '28px',
+  backgroundColor: isDark ? '#27272a' : '#e5e7eb',
+  borderRadius: '6px',
+}}>
+  {['Show', 'Hide'].map((val) => (
+    <span role="radio" aria-checked={...} ... />
+  ))}
+  <span style={{ left: isCollapsed ? '0px' : '60px', background: '#3b82f6' }} />
+</div>
+```
+
+### UX Improvement Summary
+| Before | After |
+|--------|-------|
+| Small 12px chevron icon | Clear "Show"/"Hide" toggle switch |
+| Subtle rotation animation | Sliding indicator animation |
+| Not obviously clickable | Familiar toggle pattern from elsewhere in app |
+
+### Build Status
+- Compiled successfully (-25 bytes from removing FontAwesome icon import)
+
+### Files Modified
+- `src/Plots/ComponentTable.js` - Replaced chevron with toggle switch
+
+---
+
+## Session 15 - Simplified Toggle Buttons (2026-01-12)
+
+### Goals
+- Address user feedback: reclassified components moving to new classification group makes it hard to track progress
+- Simplify all toggle UIs to single buttons (gray when off, blue when active)
+- Persist all user preferences in localStorage
+
+### User Feedback
+From user: "After reclassifying a component it moves it to sit within either team green or team red, visually this is a nice touch, but it makes it quite tricky to see where you're up to when systematically working through the components. Would it be possible to leave them in place and just change their colour?"
+
+### Changes Made
+
+#### All Three Toggles Simplified to Single Buttons
+1. **Regroup button** (above pie chart):
+   - Gray by default (components keep original position)
+   - Blue when active (components regroup by new classification)
+   - Positioned in top-right corner of pie chart
+
+2. **Static button** (above brain viewer):
+   - Gray by default (interactive Niivue view)
+   - Blue when active (static PNG view)
+
+3. **Hide button** (above component table):
+   - Gray by default (table visible)
+   - Blue when active (table hidden)
+
+#### localStorage Persistence
+All three preferences are now persisted:
+- `rica-keep-original-order` - Regroup toggle (default: don't regroup)
+- `rica-use-static-view` - Static toggle (default: interactive)
+- `rica-table-collapsed` - Hide toggle (default: visible)
+
+### Technical Details
+```javascript
+// Single button pattern used for all three toggles
+<button
+  onClick={() => setState(!state)}
+  aria-pressed={state}
+  style={{
+    backgroundColor: state ? '#3b82f6' : (isDark ? '#3f3f46' : '#d1d5db'),
+    color: state ? '#fff' : (isDark ? '#a1a1aa' : '#6b7280'),
+  }}
+>
+  Label
+</button>
+```
+
+### UX Improvement Summary
+| Before | After |
+|--------|-------|
+| Two-option toggle switches | Single buttons (gray/blue) |
+| Only keepOriginalOrder persisted | All three preferences persisted |
+| Toggle below help text | Regroup button above pie chart |
+| Complex toggle switch UI | Simple, minimal buttons |
+
+### Build Status
+- Compiled successfully (-354 B from bundle - simpler UI)
+
+### Files Modified
+- `src/Plots/Plots.js` - Simplified all toggles, added localStorage persistence
+- `src/Plots/ComponentTable.js` - Simplified Hide toggle to single button
+
+### Features Updated
+- `keep_original_order_toggle`: Now a single "Regroup" button above pie chart
+- `toggle_interactive_static_view`: Now a single "Static" button
+- `collapsible_component_table`: Now a single "Hide" button
+
+---
+
+## Session 16 - Logo Format Fix (2026-01-12)
+
+### Goals
+- Fix Rica logo not appearing in navbar and IntroPopUp
+
+### Issue
+The Rica logo was not rendering because:
+- The logo was stored as ICO format (image/x-icon) in base64
+- ICO format is not universally supported as `<img>` src in all browsers
+- ICO is intended for favicon `<link>` tags, not inline images
+
+### Changes Made
+1. **src/constants/logo.js** - Converted embedded logo from ICO to PNG format:
+   - Changed MIME type from `data:image/x-icon;base64,...` to `data:image/png;base64,...`
+   - Generated 64x64 PNG from the original favicon.ico
+   - PNG format has universal browser support for `<img>` elements
+   - Reduced file size from ~20KB to ~4KB
+
+### Technical Details
+```javascript
+// Before (ICO - not reliably rendered in <img>)
+export const LOGO_DATA_URL = `data:image/x-icon;base64,...`;
+
+// After (PNG - universal browser support)
+export const LOGO_DATA_URL = `data:image/png;base64,...`;
+```
+
+### Files Modified
+- `src/constants/logo.js` - Changed from ICO to PNG format
+
+### Locations Using Logo
+The logo is rendered in:
+- Navbar (src/index.js line 198-205)
+- IntroPopUp (src/PopUps/IntroPopUp.js line 586-590)
+- AboutPopUp (src/PopUps/AboutPopUp.js line 78)
+- Mobile view (src/Mobile.js line 27)
+
+---
+
+## Session 17 - Changelog Popup with GitHub Releases (2026-01-12)
+
+### Goals
+- Add changelog feature showing release notes when users open a new version
+- Make changelog accessible via navbar button (bell icon next to About button)
+- Populate changelog from GitHub releases API
+
+### Changes Made
+
+#### New Component
+1. **src/PopUps/ChangelogPopUp.js** (new file):
+   - Fetches releases from GitHub API (`https://api.github.com/repos/ME-ICA/rica/releases`)
+   - Shows last 10 releases with version tag, date, name, and description
+   - "Latest" badge on most recent release
+   - Links to individual releases and all releases page
+   - Loading and error states
+   - Theme-aware styling (light/dark mode support)
+   - Markdown-style body parsing (bold, bullet points, links)
+   - `onVersionSeen` callback to track when user has seen the changelog
+
+#### Updated Files
+2. **src/index.js**:
+   - Import ChangelogPopup component
+   - Import VERSION constant for version tracking
+   - Import faBell icon for navbar button
+   - Add `showChangelogPopup` state
+   - Add `toggleChangelogPopup` callback
+   - Add `handleVersionSeen` callback to persist seen version
+   - Add `useEffect` to auto-show changelog on new version
+   - Add bell icon button in navbar (before About button)
+   - Render ChangelogPopup conditionally
+
+### Technical Details
+
+**localStorage Key:**
+- `rica-last-seen-version` - Stores the last version user has seen
+
+**Auto-show Logic:**
+```javascript
+useEffect(() => {
+  if (showTabs && !showIntroPopup) {
+    const lastSeenVersion = localStorage.getItem("rica-last-seen-version");
+    if (lastSeenVersion !== VERSION) {
+      setShowChangelogPopup(true);
+    }
+  }
+}, [showTabs, showIntroPopup]);
+```
+
+**GitHub API Endpoint:**
+- `https://api.github.com/repos/ME-ICA/rica/releases`
+- Returns JSON array of release objects
+- Limited to last 10 releases for performance
+
+### UX Behavior
+| Scenario | Behavior |
+|----------|----------|
+| First-time user | Changelog auto-shows after data loads |
+| Same version reload | Changelog does NOT auto-show |
+| New version update | Changelog auto-shows after data loads |
+| Manual access | Click bell icon in navbar anytime |
+
+### Files Created
+- `src/PopUps/ChangelogPopUp.js`
+
+### Files Modified
+- `src/index.js` - Added changelog state, button, and auto-show logic
+- `features.json` - Added `changelog_popup` feature
+- `claude-progress.txt` - This session documentation
+
+### Build Status
+- ESLint passes
+- Dev server compiles successfully
+
+---
+
+## Session 18 - Citation Popup with Zenodo DOI (2026-01-12)
+
+### Goals
+- Add citation popup that appears when users save manual classification
+- Include Zenodo DOI for proper academic citation
+- Fetch latest DOI from Zenodo API to stay up to date with releases
+
+### User Request
+User wanted to prompt users to cite Rica when they save their manual classifications, similar to how the README includes the Zenodo DOI badge.
+
+### Changes Made
+
+#### New Component
+1. **src/PopUps/CitationPopUp.js** (new file):
+   - Appears automatically after saving manual classification
+   - Fetches latest release info from Zenodo API
+   - Shows success message confirming files were saved
+   - Displays formatted citation with:
+     - Authors (from Zenodo or fallback)
+     - Year (from Zenodo or current year)
+     - Version (from Zenodo or current app version)
+     - DOI (latest version DOI or concept DOI)
+   - Copy button to copy citation to clipboard
+   - Zenodo DOI badge with link
+   - "View on Zenodo" button
+   - Theme-aware styling (light/dark mode support)
+   - Graceful fallback if Zenodo API unavailable
+
+#### Updated Files
+2. **src/Plots/Plots.js**:
+   - Import CitationPopUp component
+   - Add `showCitationPopup` state
+   - Modify `saveManualClassification` to show popup after save
+   - Render CitationPopUp conditionally
+
+3. **features.json**:
+   - Added `citation_popup` feature with test steps
+
+### Technical Details
+
+**Zenodo API:**
+- Concept DOI: `10.5281/zenodo.5788349` (points to all versions)
+- API endpoint: `https://zenodo.org/api/records?q=conceptrecid:5788349&sort=-version&size=1`
+- Returns latest release metadata including version-specific DOI, authors, and publication date
+
+**Citation Format:**
+```
+Authors (Year). Rica: Reports for ICA (Version X.X.X). Zenodo. https://doi.org/DOI
+```
+
+**Fallback Behavior:**
+- If Zenodo API fails, uses cached/default values
+- Shows subtle note: "Using cached citation data (Zenodo unavailable)"
+- Citation still functional with concept DOI
+
+### Files Created
+- `src/PopUps/CitationPopUp.js`
+
+### Files Modified
+- `src/Plots/Plots.js`
+- `features.json`
+- `claude-progress.txt`
+
+### Build Status
+- ESLint passes with no errors or warnings
+- Dev server compiles successfully
+
+---
+
 ## Template for Future Sessions
 
 ```
