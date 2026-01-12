@@ -46,6 +46,12 @@ function parseManualClassification(text) {
     skipEmptyLines: true,
     dynamicTyping: true,
   });
+  
+  // Check for parsing errors
+  if (parsed.errors && parsed.errors.length > 0) {
+    console.warn("Errors parsing manual_classification.tsv:", parsed.errors);
+  }
+  
   return parsed.data;
 }
 
@@ -60,6 +66,7 @@ function applyManualClassifications(components, manualClassificationData) {
     manualClassificationData.map((entry) => [entry.Component, entry])
   );
 
+  let appliedCount = 0;
   components.forEach((component) => {
     const manualEntry = manualMap.get(component.Component);
     if (manualEntry) {
@@ -73,8 +80,11 @@ function applyManualClassifications(components, manualClassificationData) {
       if (manualEntry.rationale) {
         component.rationale = manualEntry.rationale;
       }
+      appliedCount++;
     }
   });
+
+  console.log("[Rica] Applied manual classifications to", appliedCount, "components");
 }
 
 // Promise wrapper for FileReader
@@ -274,6 +284,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             const response = await fetch(`/${filepath}`);
             const text = await response.text();
             manualClassificationData = parseManualClassification(text);
+            console.log("[Rica] Loaded manual_classification.tsv with", manualClassificationData?.length || 0, "entries");
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
         } catch (error) {
@@ -485,6 +496,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           if (filename === "manual_classification.tsv") {
             const text = await readFileAsText(file);
             manualClassificationData = parseManualClassification(text);
+            console.log("[Rica] Loaded manual_classification.tsv with", manualClassificationData?.length || 0, "entries");
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
         } catch (error) {
