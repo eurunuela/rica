@@ -702,6 +702,46 @@
         "Reload the page and verify Rica remembers your preference (stored in localStorage)"
       ],
       "passes": true
+    },
+    {
+      "id": "changelog_popup",
+      "category": "ui",
+      "description": "Display changelog popup with GitHub releases, auto-shown on new version",
+      "steps": [
+        "Load a tedana folder",
+        "Verify bell icon button appears in navbar next to the About (?) button",
+        "Click the bell icon button",
+        "Verify 'What's New' popup appears with current version displayed",
+        "Verify popup shows recent releases fetched from GitHub API",
+        "Verify each release shows version tag, date, release name, and description",
+        "Verify 'Latest' badge appears on the most recent release",
+        "Click 'View on GitHub' link on any release to open in new tab",
+        "Click 'View All Releases' button to open GitHub releases page",
+        "Close popup and reload the page",
+        "On first load with a new version, verify changelog popup auto-shows",
+        "After viewing, the popup should not auto-show again for same version (stored in localStorage as 'rica-last-seen-version')"
+      ],
+      "passes": true
+    },
+    {
+      "id": "citation_popup",
+      "category": "ui",
+      "description": "Display citation popup with Zenodo DOI after saving manual classification",
+      "steps": [
+        "Load a tedana folder",
+        "Navigate to the ICA tab",
+        "Make at least one classification change",
+        "Click the 'Save' button",
+        "Verify three files download (accepted.txt, rejected.txt, manual_classification.tsv)",
+        "Verify 'Cite Rica' popup appears automatically after save",
+        "Verify popup shows success message 'Classification saved successfully!'",
+        "Verify citation text is displayed with authors, year, version, and DOI",
+        "Verify Zenodo DOI badge is displayed",
+        "Click 'Copy' button and verify citation is copied to clipboard",
+        "Click 'View on Zenodo' button to open Zenodo page in new tab",
+        "Click 'Done' or click outside popup to close"
+      ],
+      "passes": true
     }
   ]
 }

@@ -9,6 +9,7 @@ import FFTSpectrum from "./FFTSpectrum";
 import BrainViewer from "./BrainViewer";
 import ComponentTable from "./ComponentTable";
 import CorrelationHeatmap from "./CorrelationHeatmap";
+import CitationPopUp from "../PopUps/CitationPopUp";
 import { assignColor, formatComponentName } from "./PlotUtils";
 
 // Chart dimensions - sized to fit 2x2 in half screen width
@@ -47,6 +48,9 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
     const saved = localStorage.getItem('rica-table-collapsed');
     return saved === 'true';
   });
+
+  // Citation popup state - shown after saving
+  const [showCitationPopup, setShowCitationPopup] = useState(false);
 
   // Toggle for keeping original order vs grouping by new classification
   // Persisted to localStorage so Rica remembers the user's preference
@@ -333,6 +337,9 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
     downloadFile(accepted.join(","), "accepted.txt");
     downloadFile(rejected.join(","), "rejected.txt");
     downloadFile(tsv, "manual_classification.tsv", "text/tab-separated-values");
+
+    // Show citation popup after save
+    setShowCitationPopup(true);
   }, [originalData, processedData]);
 
   // Handle pie slice click - map back to original index
@@ -671,6 +678,14 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
             </>
           )}
         </div>
+      )}
+
+      {/* Citation popup - shown after saving */}
+      {showCitationPopup && (
+        <CitationPopUp
+          closePopup={() => setShowCitationPopup(false)}
+          isDark={isDark}
+        />
       )}
     </div>
   );

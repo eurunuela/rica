@@ -1937,6 +1937,151 @@ The logo is rendered in:
 
 ---
 
+## Session 17 - Changelog Popup with GitHub Releases (2026-01-12)
+
+### Goals
+- Add changelog feature showing release notes when users open a new version
+- Make changelog accessible via navbar button (bell icon next to About button)
+- Populate changelog from GitHub releases API
+
+### Changes Made
+
+#### New Component
+1. **src/PopUps/ChangelogPopUp.js** (new file):
+   - Fetches releases from GitHub API (`https://api.github.com/repos/ME-ICA/rica/releases`)
+   - Shows last 10 releases with version tag, date, name, and description
+   - "Latest" badge on most recent release
+   - Links to individual releases and all releases page
+   - Loading and error states
+   - Theme-aware styling (light/dark mode support)
+   - Markdown-style body parsing (bold, bullet points, links)
+   - `onVersionSeen` callback to track when user has seen the changelog
+
+#### Updated Files
+2. **src/index.js**:
+   - Import ChangelogPopup component
+   - Import VERSION constant for version tracking
+   - Import faBell icon for navbar button
+   - Add `showChangelogPopup` state
+   - Add `toggleChangelogPopup` callback
+   - Add `handleVersionSeen` callback to persist seen version
+   - Add `useEffect` to auto-show changelog on new version
+   - Add bell icon button in navbar (before About button)
+   - Render ChangelogPopup conditionally
+
+### Technical Details
+
+**localStorage Key:**
+- `rica-last-seen-version` - Stores the last version user has seen
+
+**Auto-show Logic:**
+```javascript
+useEffect(() => {
+  if (showTabs && !showIntroPopup) {
+    const lastSeenVersion = localStorage.getItem("rica-last-seen-version");
+    if (lastSeenVersion !== VERSION) {
+      setShowChangelogPopup(true);
+    }
+  }
+}, [showTabs, showIntroPopup]);
+```
+
+**GitHub API Endpoint:**
+- `https://api.github.com/repos/ME-ICA/rica/releases`
+- Returns JSON array of release objects
+- Limited to last 10 releases for performance
+
+### UX Behavior
+| Scenario | Behavior |
+|----------|----------|
+| First-time user | Changelog auto-shows after data loads |
+| Same version reload | Changelog does NOT auto-show |
+| New version update | Changelog auto-shows after data loads |
+| Manual access | Click bell icon in navbar anytime |
+
+### Files Created
+- `src/PopUps/ChangelogPopUp.js`
+
+### Files Modified
+- `src/index.js` - Added changelog state, button, and auto-show logic
+- `features.json` - Added `changelog_popup` feature
+- `claude-progress.txt` - This session documentation
+
+### Build Status
+- ESLint passes
+- Dev server compiles successfully
+
+---
+
+## Session 18 - Citation Popup with Zenodo DOI (2026-01-12)
+
+### Goals
+- Add citation popup that appears when users save manual classification
+- Include Zenodo DOI for proper academic citation
+- Fetch latest DOI from Zenodo API to stay up to date with releases
+
+### User Request
+User wanted to prompt users to cite Rica when they save their manual classifications, similar to how the README includes the Zenodo DOI badge.
+
+### Changes Made
+
+#### New Component
+1. **src/PopUps/CitationPopUp.js** (new file):
+   - Appears automatically after saving manual classification
+   - Fetches latest release info from Zenodo API
+   - Shows success message confirming files were saved
+   - Displays formatted citation with:
+     - Authors (from Zenodo or fallback)
+     - Year (from Zenodo or current year)
+     - Version (from Zenodo or current app version)
+     - DOI (latest version DOI or concept DOI)
+   - Copy button to copy citation to clipboard
+   - Zenodo DOI badge with link
+   - "View on Zenodo" button
+   - Theme-aware styling (light/dark mode support)
+   - Graceful fallback if Zenodo API unavailable
+
+#### Updated Files
+2. **src/Plots/Plots.js**:
+   - Import CitationPopUp component
+   - Add `showCitationPopup` state
+   - Modify `saveManualClassification` to show popup after save
+   - Render CitationPopUp conditionally
+
+3. **features.json**:
+   - Added `citation_popup` feature with test steps
+
+### Technical Details
+
+**Zenodo API:**
+- Concept DOI: `10.5281/zenodo.5788349` (points to all versions)
+- API endpoint: `https://zenodo.org/api/records?q=conceptrecid:5788349&sort=-version&size=1`
+- Returns latest release metadata including version-specific DOI, authors, and publication date
+
+**Citation Format:**
+```
+Authors (Year). Rica: Reports for ICA (Version X.X.X). Zenodo. https://doi.org/DOI
+```
+
+**Fallback Behavior:**
+- If Zenodo API fails, uses cached/default values
+- Shows subtle note: "Using cached citation data (Zenodo unavailable)"
+- Citation still functional with concept DOI
+
+### Files Created
+- `src/PopUps/CitationPopUp.js`
+
+### Files Modified
+- `src/Plots/Plots.js`
+- `features.json`
+- `claude-progress.txt`
+
+### Build Status
+- ESLint passes with no errors or warnings
+- Dev server compiles successfully
+
+---
+
 ## Template for Future Sessions
 
 ```
