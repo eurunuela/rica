@@ -182,7 +182,7 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
             <span
               key={val}
               role="radio"
-              aria-checked={(val === 'Hide') === !isCollapsed}
+              aria-checked={(val === 'Show') === !isCollapsed}
               aria-label={`${val} component metrics table`}
               tabIndex={0}
               onClick={() => {
@@ -209,7 +209,7 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
                 justifyContent: 'center',
                 cursor: 'pointer',
                 transition: 'color 0.2s ease',
-                color: (val === 'Hide') === !isCollapsed ? '#1f2937' : (isDark ? '#a1a1aa' : 'rgba(0,0,0,0.6)'),
+                color: (val === 'Show') === !isCollapsed ? '#1f2937' : (isDark ? '#a1a1aa' : 'rgba(0,0,0,0.6)'),
                 fontSize: '12px',
               }}
             >
@@ -224,7 +224,7 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
             style={{
               position: 'absolute',
               top: 0,
-              left: isCollapsed ? '0px' : '60px',
+              left: isCollapsed ? '60px' : '0px',
               zIndex: 0,
               display: 'block',
               height: '28px',
