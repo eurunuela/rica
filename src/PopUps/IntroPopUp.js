@@ -45,6 +45,7 @@ function parseManualClassification(text) {
     header: true,
     skipEmptyLines: true,
     dynamicTyping: true,
+    delimiter: "\t",
   });
   
   // Check for parsing errors
@@ -62,12 +63,20 @@ function applyManualClassifications(components, manualClassificationData) {
   }
 
   // Create a Map for O(n) lookup performance
+  // Filter out entries with invalid Component field
   const manualMap = new Map(
-    manualClassificationData.map((entry) => [entry.Component, entry])
+    manualClassificationData
+      .filter((entry) => entry.Component != null)
+      .map((entry) => [entry.Component, entry])
   );
 
   let appliedCount = 0;
   components.forEach((component) => {
+    // Skip components with invalid Component field
+    if (component.Component == null) {
+      return;
+    }
+
     const manualEntry = manualMap.get(component.Component);
     if (manualEntry) {
       component.classification = manualEntry.classification;
