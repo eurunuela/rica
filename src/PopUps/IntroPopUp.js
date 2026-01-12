@@ -89,6 +89,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           (f.includes("stat-z_components.nii.gz") && f.includes("ICA")) ||
           f.includes("_mask.nii") ||
           f.includes("CrossComponent_metrics.json") ||
+          f === "manual_classification.tsv" ||
           // QC NIfTI files
           f.includes("T2starmap.nii") ||
           f.includes("S0map.nii") ||
@@ -112,6 +113,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       const qcNiftiBuffers = {};
       // External regressors correlation figure
       let externalRegressorsFigure = null;
+      // Manual classification data
+      let manualClassificationData = null;
 
       // Process files via HTTP fetch
       for (const filepath of relevantFiles) {
@@ -227,6 +230,19 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             qcNiftiBuffers.rmse = await response.arrayBuffer();
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
+
+          // Manual classification file
+          if (filename === "manual_classification.tsv") {
+            const response = await fetch(`/${filepath}`);
+            const text = await response.text();
+            const parsed = Papa.parse(text, {
+              header: true,
+              skipEmptyLines: true,
+              dynamicTyping: true,
+            });
+            manualClassificationData = parsed.data;
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
         } catch (error) {
           console.error(`Error fetching file ${filepath}:`, error);
         }
@@ -236,6 +252,27 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       compFigures.sort((a, b) => a.name.localeCompare(b.name));
       carpetFigures.sort((a, b) => a.name.localeCompare(b.name));
       diagnosticFigures.sort((a, b) => a.name.localeCompare(b.name));
+
+      // Apply manual classifications if available
+      if (manualClassificationData && components.length > 0) {
+        components.forEach((component) => {
+          const manualEntry = manualClassificationData.find(
+            (m) => m.Component === component.Component
+          );
+          if (manualEntry) {
+            component.classification = manualEntry.classification;
+            if (manualEntry.original_classification) {
+              component.original_classification = manualEntry.original_classification;
+            }
+            if (manualEntry.classification_tags) {
+              component.classification_tags = manualEntry.classification_tags;
+            }
+            if (manualEntry.rationale) {
+              component.rationale = manualEntry.rationale;
+            }
+          }
+        });
+      }
 
       // Pass all data to parent
       onDataLoad({
@@ -299,6 +336,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           (f.name.includes("stat-z_components.nii.gz") && f.name.includes("ICA")) ||
           f.name.includes("_mask.nii") ||
           f.name.includes("CrossComponent_metrics.json") ||
+          f.name === "manual_classification.tsv" ||
           // QC NIfTI files
           f.name.includes("T2starmap.nii") ||
           f.name.includes("S0map.nii") ||
@@ -322,6 +360,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       const qcNiftiBuffers = {};
       // External regressors correlation figure
       let externalRegressorsFigure = null;
+      // Manual classification data
+      let manualClassificationData = null;
 
       // Process all files in parallel using Promise.all
       const filePromises = files.map(async (file) => {
@@ -425,6 +465,18 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             qcNiftiBuffers.rmse = await readFileAsArrayBuffer(file);
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
+
+          // Manual classification file
+          if (filename === "manual_classification.tsv") {
+            const text = await readFileAsText(file);
+            const parsed = Papa.parse(text, {
+              header: true,
+              skipEmptyLines: true,
+              dynamicTyping: true,
+            });
+            manualClassificationData = parsed.data;
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
         } catch (error) {
           console.error(`Error reading file ${filename}:`, error);
         }
@@ -437,6 +489,27 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       compFigures.sort((a, b) => a.name.localeCompare(b.name));
       carpetFigures.sort((a, b) => a.name.localeCompare(b.name));
       diagnosticFigures.sort((a, b) => a.name.localeCompare(b.name));
+
+      // Apply manual classifications if available
+      if (manualClassificationData && components.length > 0) {
+        components.forEach((component) => {
+          const manualEntry = manualClassificationData.find(
+            (m) => m.Component === component.Component
+          );
+          if (manualEntry) {
+            component.classification = manualEntry.classification;
+            if (manualEntry.original_classification) {
+              component.original_classification = manualEntry.original_classification;
+            }
+            if (manualEntry.classification_tags) {
+              component.classification_tags = manualEntry.classification_tags;
+            }
+            if (manualEntry.rationale) {
+              component.rationale = manualEntry.rationale;
+            }
+          }
+        });
+      }
 
       // Pass all data to parent at once - no delays!
       onDataLoad({
