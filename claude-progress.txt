@@ -1898,6 +1898,45 @@ All three preferences are now persisted:
 
 ---
 
+## Session 16 - Logo Format Fix (2026-01-12)
+
+### Goals
+- Fix Rica logo not appearing in navbar and IntroPopUp
+
+### Issue
+The Rica logo was not rendering because:
+- The logo was stored as ICO format (image/x-icon) in base64
+- ICO format is not universally supported as `<img>` src in all browsers
+- ICO is intended for favicon `<link>` tags, not inline images
+
+### Changes Made
+1. **src/constants/logo.js** - Converted embedded logo from ICO to PNG format:
+   - Changed MIME type from `data:image/x-icon;base64,...` to `data:image/png;base64,...`
+   - Generated 64x64 PNG from the original favicon.ico
+   - PNG format has universal browser support for `<img>` elements
+   - Reduced file size from ~20KB to ~4KB
+
+### Technical Details
+```javascript
+// Before (ICO - not reliably rendered in <img>)
+export const LOGO_DATA_URL = `data:image/x-icon;base64,...`;
+
+// After (PNG - universal browser support)
+export const LOGO_DATA_URL = `data:image/png;base64,...`;
+```
+
+### Files Modified
+- `src/constants/logo.js` - Changed from ICO to PNG format
+
+### Locations Using Logo
+The logo is rendered in:
+- Navbar (src/index.js line 198-205)
+- IntroPopUp (src/PopUps/IntroPopUp.js line 586-590)
+- AboutPopUp (src/PopUps/AboutPopUp.js line 78)
+- Mobile view (src/Mobile.js line 27)
+
+---
+
 ## Template for Future Sessions
 
 ```
