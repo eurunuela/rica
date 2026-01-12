@@ -1,6 +1,4 @@
 import React, { useRef, useEffect, useMemo } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
 import { formatComponentName } from "./PlotUtils";
 
 // Theme-aware colors
@@ -146,47 +144,91 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
 
   return (
     <div style={{ width: "80%", margin: "0 auto", padding: "16px 24px 24px 24px" }}>
-      {/* Collapsible header */}
-      <button
+      {/* Collapsible header with toggle switch */}
+      <div
         id="component-metrics-toggle"
-        onClick={onToggleCollapse}
-        aria-expanded={!isCollapsed}
-        aria-controls="component-metrics-table"
-        aria-label="Toggle component metrics table"
+        aria-label="Toggle component metrics table visibility"
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '8px',
+          gap: '12px',
           width: '100%',
           padding: '8px 12px',
           marginBottom: isCollapsed ? '0' : '12px',
+        }}
+      >
+        {/* Small toggle switch */}
+        <div
+          role="radiogroup"
+          aria-label="Toggle component metrics table"
+          aria-controls="component-metrics-table"
+          style={{
+            position: 'relative',
+            height: '28px',
+            fontWeight: 600,
+            backgroundColor: isDark ? '#27272a' : '#e5e7eb',
+            borderRadius: '6px',
+            display: 'flex',
+          }}
+        >
+          {['Show', 'Hide'].map((val) => (
+            <span
+              key={val}
+              role="radio"
+              aria-checked={(val === 'Hide') === !isCollapsed}
+              aria-label={`${val} component metrics table`}
+              tabIndex={0}
+              onClick={() => onToggleCollapse()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onToggleCollapse();
+                }
+              }}
+              style={{
+                position: 'relative',
+                zIndex: 10,
+                height: '28px',
+                width: '60px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'color 0.2s ease',
+                color: (val === 'Hide') === !isCollapsed ? '#1f2937' : (isDark ? '#a1a1aa' : 'rgba(0,0,0,0.6)'),
+                fontSize: '12px',
+              }}
+            >
+              {val}
+            </span>
+          ))}
+          <span
+            aria-hidden="true"
+            aria-expanded={!isCollapsed}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: isCollapsed ? '0px' : '60px',
+              zIndex: 0,
+              display: 'block',
+              height: '28px',
+              width: '60px',
+              borderRadius: '6px',
+              transition: 'all 0.2s ease',
+              background: isDark ? '#3b82f6' : '#60a5fa',
+            }}
+          />
+        </div>
+
+        {/* Title and component count */}
+        <span style={{
           fontSize: '16px',
           fontWeight: 600,
           color: 'var(--text-primary)',
-          backgroundColor: 'transparent',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          transition: 'all 0.15s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'transparent';
-        }}
-      >
-        <FontAwesomeIcon
-          icon={faChevronDown}
-          aria-hidden="true"
-          style={{
-            fontSize: '12px',
-            transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
-            transition: 'transform 0.2s ease',
-          }}
-        />
-        Component Metrics
+        }}>
+          Component Metrics
+        </span>
         <span style={{
           fontSize: '12px',
           fontWeight: 400,
@@ -194,7 +236,7 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
         }}>
           ({data.length} components)
         </span>
-      </button>
+      </div>
 
       {/* Collapsible table container */}
       <div

@@ -1771,6 +1771,64 @@ Addressed Copilot PR review comments for accessibility:
 
 ---
 
+## Session 14.2 - Improved Collapsible Table UX (2026-01-12)
+
+### Goals
+- Make it more obvious that the component metrics table can be collapsed/expanded
+- Maintain consistency with existing UI design patterns
+
+### User Feedback
+The chevron-based collapse indicator was too subtle and not obviously clickable.
+
+### Changes Made
+
+#### src/Plots/ComponentTable.js
+1. **Replaced chevron with toggle switch**: Removed the small 12px chevron icon that rotated when collapsed
+2. **Added pill-style toggle**: Implemented a "Show" / "Hide" toggle switch matching the Interactive/Static pattern:
+   - 120px total width (60px per option)
+   - 28px height (smaller than main toggle switches for subtlety)
+   - Blue sliding indicator (#3b82f6 dark mode, #60a5fa light mode)
+   - Theme-aware colors for light/dark modes
+3. **Improved layout**:
+   - Toggle switch on the left
+   - "Component Metrics" title in the center
+   - Component count on the right
+4. **Maintained accessibility**:
+   - `role="radiogroup"` and `role="radio"` for screen readers
+   - `aria-checked`, `aria-controls`, `aria-expanded` attributes
+   - Keyboard support (Enter/Space keys)
+   - Proper ARIA labels
+
+### Technical Details
+```javascript
+// Toggle switch matches existing pattern
+<div role="radiogroup" style={{
+  height: '28px',
+  backgroundColor: isDark ? '#27272a' : '#e5e7eb',
+  borderRadius: '6px',
+}}>
+  {['Show', 'Hide'].map((val) => (
+    <span role="radio" aria-checked={...} ... />
+  ))}
+  <span style={{ left: isCollapsed ? '0px' : '60px', background: '#3b82f6' }} />
+</div>
+```
+
+### UX Improvement Summary
+| Before | After |
+|--------|-------|
+| Small 12px chevron icon | Clear "Show"/"Hide" toggle switch |
+| Subtle rotation animation | Sliding indicator animation |
+| Not obviously clickable | Familiar toggle pattern from elsewhere in app |
+
+### Build Status
+- Compiled successfully (-25 bytes from removing FontAwesome icon import)
+
+### Files Modified
+- `src/Plots/ComponentTable.js` - Replaced chevron with toggle switch
+
+---
+
 ## Template for Future Sessions
 
 ```
