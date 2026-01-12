@@ -172,18 +172,31 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
             display: 'flex',
           }}
         >
-          {['Show', 'Hide'].map((val) => (
+          {['Show', 'Hide'].map((val) => {
+            // Clicking "Show" should show table (isCollapsed becomes false)
+            // Clicking "Hide" should hide table (isCollapsed becomes true)
+            const shouldShow = val === 'Show';
+            const isCurrentlyInDesiredState = shouldShow ? !isCollapsed : isCollapsed;
+
+            return (
             <span
               key={val}
               role="radio"
               aria-checked={(val === 'Hide') === !isCollapsed}
               aria-label={`${val} component metrics table`}
               tabIndex={0}
-              onClick={() => onToggleCollapse()}
+              onClick={() => {
+                // Only toggle if not already in desired state
+                if (!isCurrentlyInDesiredState) {
+                  onToggleCollapse();
+                }
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  onToggleCollapse();
+                  if (!isCurrentlyInDesiredState) {
+                    onToggleCollapse();
+                  }
                 }
               }}
               style={{
@@ -202,7 +215,9 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
             >
               {val}
             </span>
-          ))}
+          );
+          })}
+
           <span
             aria-hidden="true"
             aria-expanded={!isCollapsed}
