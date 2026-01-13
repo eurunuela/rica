@@ -1,8 +1,8 @@
 {
   "projectName": "rica",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "React-based interactive visualization tool for multi-echo fMRI ICA component analysis",
-  "lastUpdated": "2026-01-12",
+  "lastUpdated": "2026-01-13",
   "modernizationNotes": "v2.0.0 - Upgraded to React 18, functional components, removed 5s loading delay, added progress indicator, Notion-style popups",
   "features": [
     {
@@ -740,6 +740,21 @@
         "Click 'Copy' button and verify citation is copied to clipboard",
         "Click 'View on Zenodo' button to open Zenodo page in new tab",
         "Click 'Done' or click outside popup to close"
+      ],
+      "passes": true
+    },
+    {
+      "id": "load_manual_classification",
+      "category": "data-loading",
+      "description": "Load existing manual_classification.tsv from tedana folder and restore previous reclassifications",
+      "steps": [
+        "Load a tedana folder containing a manual_classification.tsv file",
+        "Verify a warning popup appears informing about existing manual classifications",
+        "Verify popup lists all manually reclassified components",
+        "Click 'Continue' to load the data with previous classifications",
+        "Verify component classifications match those in the manual_classification.tsv",
+        "Verify scatter plots, pie chart, and table reflect the loaded classifications",
+        "Make additional changes and save to update the manual_classification.tsv"
       ],
       "passes": true
     }
