@@ -770,10 +770,14 @@
         "Verify decision tree nodes are displayed in sequential order",
         "Verify each node shows its type (Decision or Calculation), label, and counts",
         "Click on a decision node to view affected components",
-        "Verify affected components list appears on right side",
+        "Verify component list card is vertically centered with title inside card (400px width)",
         "Click on a component to view its classification path",
-        "Verify path shows initial state and changes at each node",
-        "Verify nodes that affected the selected component are highlighted"
+        "Verify classification path card is vertically centered with title inside card (400px width)",
+        "Verify path shows initial state left-aligned at root level",
+        "Verify subsequent classification changes are left-aligned but indented (20px)",
+        "Verify nodes that affected the selected component are highlighted",
+        "Verify component visualization fills the full width of right column",
+        "Verify brain viewer is not cropped (420px height)"
       ],
       "passes": false
     }

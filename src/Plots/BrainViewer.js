@@ -33,13 +33,14 @@ function generateMosaicString(numSlices, extents, offset = 0) {
   return `A ${axialSlices} ; S ${sagittalSlices} ; C ${coronalSlices}`;
 }
 
-function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, componentLabel, saturation = 0.1, isDark = false }) {
+function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, componentLabel, isDark = false }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const nvRef = useRef(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(null);
   const [sliceOffset, setSliceOffset] = useState(0); // Center offset (-0.5 to 0.5)
+  const [saturation, setSaturation] = useState(0.25); // Colormap saturation (0.01 to 1.0)
   const [volumeExtents, setVolumeExtents] = useState(null); // Store volume extents for mosaic
   const maxAbsRef = useRef(null); // Store max absolute value for saturation adjustments
   const numSlices = 7; // Fixed at 7 slices per row
@@ -398,8 +399,6 @@ function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, c
             gap: "12px",
             padding: "8px 16px",
             backgroundColor: sliderBg,
-            borderBottomLeftRadius: "8px",
-            borderBottomRightRadius: "8px",
           }}
         >
           <span
@@ -430,10 +429,60 @@ function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, c
               fontSize: "12px",
               color: sliderText,
               minWidth: "40px",
-              textAlign: "right",
+              textAlign: "center",
             }}
           >
             {sliceOffset > 0 ? "+" : ""}{Math.round(sliceOffset * 100)}%
+          </span>
+        </div>
+      )}
+
+      {/* Saturation slider */}
+      {isLoaded && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "12px",
+            padding: "8px 16px",
+            backgroundColor: sliderBg,
+            borderBottomLeftRadius: "8px",
+            borderBottomRightRadius: "8px",
+          }}
+        >
+          <span
+            style={{
+              fontSize: "12px",
+              color: sliderText,
+              minWidth: "70px",
+            }}
+          >
+            Saturation
+          </span>
+          <input
+            type="range"
+            min="1"
+            max="100"
+            step="1"
+            value={saturation * 100}
+            onChange={(e) => setSaturation(parseFloat(e.target.value) / 100)}
+            style={{
+              flex: 1,
+              maxWidth: "200px",
+              cursor: "pointer",
+              accentColor: "#3b82f6",
+            }}
+          />
+          <span
+            style={{
+              fontSize: "12px",
+              color: sliderText,
+              minWidth: "40px",
+              textAlign: "center",
+            }}
+          >
+            {Math.round(saturation * 100)}%
           </span>
         </div>
       )}

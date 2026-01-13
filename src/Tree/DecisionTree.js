@@ -2,7 +2,6 @@ import React, { useState, useMemo, useCallback } from "react";
 import { isDecisionNode, getAffectingNodes } from "../utils/decisionTreeUtils";
 import TimeSeries from "../Plots/TimeSeries";
 import BrainViewer from "../Plots/BrainViewer";
-import FFTSpectrum from "../Plots/FFTSpectrum";
 import { formatComponentName } from "../Plots/PlotUtils";
 
 /**
@@ -14,7 +13,6 @@ import { formatComponentName } from "../Plots/PlotUtils";
 function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, niftiBuffer, maskBuffer, isDark }) {
   const [selectedNode, setSelectedNode] = useState(null);
   const [selectedComponent, setSelectedComponent] = useState(null);
-  const [colormapSaturation, setColormapSaturation] = useState(0.25);
 
   // Theme colors
   const colors = useMemo(
@@ -166,7 +164,7 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
       <div
         style={{
           flex: 1,
-          minWidth: "300px",
+          padding: "0 24px",
           display: "flex",
           flexDirection: "column",
         }}
@@ -333,9 +331,11 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: "650px",
+          flex: 1,
+          padding: "0 24px",
           display: "flex",
           flexDirection: "column",
+          justifyContent: "center",
           position: "sticky",
           top: "0px",
           alignSelf: "flex-start",
@@ -343,31 +343,32 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
           gap: "16px",
         }}
       >
-        <h3
-          style={{
-            fontSize: "14px",
-            fontWeight: "600",
-            color: colors.text,
-            marginBottom: "12px",
-          }}
-        >
-          {selectedNode !== null ? "Affected Components" : "All Components"}
-        </h3>
-
         {/* Component List */}
         <div
           style={{
             minHeight: selectedComponent ? "150px" : "auto",
             maxHeight: selectedComponent ? "200px" : "none",
-            minWidth: "280px",
             overflow: "auto",
             backgroundColor: colors.bgElevated,
             border: `1px solid ${colors.border}`,
             borderRadius: "8px",
             padding: "12px",
-            alignSelf: "flex-start",
+            width: "400px",
+            alignSelf: "center",
           }}
         >
+          <h3
+            style={{
+              fontSize: "14px",
+              fontWeight: "600",
+              color: colors.text,
+              marginBottom: "12px",
+            }}
+          >
+            {selectedNode !== null ? "Affected Components" : "All Components"}
+          </h3>
+
+
           {selectedNode !== null ? (
             // Show components affected by selected node
             affectedComponents.length > 0 ? (
@@ -485,16 +486,27 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
               backgroundColor: colors.bgElevated,
               border: `1px solid ${colors.border}`,
               borderRadius: "8px",
-              alignSelf: "flex-start",
+              display: "flex",
+              flexDirection: "column",
+              width: "400px",
+              alignSelf: "center",
             }}
           >
-            <h4 style={{ fontSize: "13px", fontWeight: "600", color: colors.text, marginBottom: "4px" }}>
+            <h3
+              style={{
+                fontSize: "14px",
+                fontWeight: "600",
+                color: colors.text,
+                marginBottom: "4px",
+              }}
+            >
               Classification Path
-            </h4>
+            </h3>
+
             <p style={{ fontSize: "12px", color: colors.textSecondary, marginBottom: "12px" }}>
               {selectedComponent.replace("_", " ")}
             </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-start" }}>
               {/* Initial state */}
               <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px" }}>
                 <span
@@ -522,7 +534,7 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
                 const isRejected = node.classification === "rejected";
 
                 return (
-                  <div key={idx} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px" }}>
+                  <div key={idx} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", marginLeft: "20px" }}>
                     <span style={{ color: colors.textSecondary }}>↓</span>
                     <span
                       style={{
@@ -554,7 +566,7 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
               border: `1px solid ${colors.border}`,
               borderRadius: "8px",
               padding: "16px",
-              alignSelf: "flex-start",
+              width: "100%",
             }}
           >
             <h4 style={{ fontSize: "13px", fontWeight: "600", color: colors.text, marginBottom: "4px" }}>
@@ -562,10 +574,10 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
             </h4>
 
             {/* Time series */}
-            <div>
+            <div style={{ width: "100%" }}>
               <TimeSeries
                 data={currentTimeSeries}
-                width={600}
+                width={880}
                 height={120}
                 title="Time Series"
                 componentLabel={currentComponentLabel}
@@ -575,56 +587,14 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
             </div>
 
             {/* Brain stat map viewer */}
-            <div>
+            <div style={{ width: "100%" }}>
               <BrainViewer
                 niftiBuffer={niftiBuffer}
                 maskBuffer={maskBuffer}
                 componentIndex={selectedComponentIndex}
-                width={600}
-                height={220}
+                width={880}
+                height={510}
                 componentLabel={currentComponentLabel}
-                saturation={colormapSaturation}
-                isDark={isDark}
-              />
-            </div>
-
-            {/* Saturation slider */}
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              padding: "4px 0",
-            }}>
-              <label htmlFor="tree-saturation-slider" style={{ fontSize: "11px", color: colors.textSecondary }}>
-                Saturation:
-              </label>
-              <input
-                id="tree-saturation-slider"
-                type="range"
-                min="1"
-                max="100"
-                value={colormapSaturation * 100}
-                onChange={(e) => setColormapSaturation(parseFloat(e.target.value) / 100)}
-                style={{
-                  width: "200px",
-                  cursor: "pointer",
-                  accentColor: "#3b82f6",
-                }}
-              />
-              <span style={{ fontSize: "11px", color: colors.textSecondary, minWidth: "35px", textAlign: "right" }}>
-                {Math.round(colormapSaturation * 100)}%
-              </span>
-            </div>
-
-            {/* FFT spectrum */}
-            <div>
-              <FFTSpectrum
-                timeSeries={currentTimeSeries}
-                width={600}
-                height={120}
-                title="Power Spectrum"
-                sampleRate={1}
-                lineColor={selectedClassification === 'accepted' ? getColors(isDark).acceptedHover : getColors(isDark).rejectedHover}
                 isDark={isDark}
               />
             </div>

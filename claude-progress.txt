@@ -2339,3 +2339,37 @@ Interactive visualization
 ### Next Steps
 - Recommended follow-up work
 ```
+
+## Session - Decision Tree Layout Improvements (2026-01-13)
+
+### Goals
+- Fix width alignment between component list and classification path card in Tree tab
+- Improve classification path visual hierarchy with left-alignment and indentation
+- Make visualization card and visualizations fill the right column width
+
+### Changes Made
+1. **src/Tree/DecisionTree.js** - Added `justifyContent: "center"` to right column for vertical centering (line 339)
+2. **src/Tree/DecisionTree.js** - Moved "All Components"/"Affected Components" title inside component list card (line 361-370)
+3. **src/Tree/DecisionTree.js** - Changed component list from `maxWidth: "400px"` to `width: "400px"` and added `alignSelf: "center"` (lines 357-358)
+4. **src/Tree/DecisionTree.js** - Moved "Classification Path" title inside classification path card (line 496-505)
+5. **src/Tree/DecisionTree.js** - Changed classification path card from `maxWidth: "400px"` to `width: "400px"` and added `alignSelf: "center"` (lines 492-493)
+6. **src/Tree/DecisionTree.js** - Changed path container to `alignItems: "flex-start"` for left alignment (line 510)
+7. **src/Tree/DecisionTree.js** - Added `marginLeft: "20px"` to indent classification changes (line 538)
+8. **src/Tree/DecisionTree.js** - Set visualization card to `width: "100%"` to fill right column (line 567)
+9. **src/Tree/DecisionTree.js** - Increased TimeSeries width from 700 to 880px to fill the card (line 578)
+10. **src/Tree/DecisionTree.js** - Increased BrainViewer width from 700 to 880px and height from 340 to 510px to accommodate both sliders (lines 595-596)
+11. **src/Tree/DecisionTree.js** - Removed saturation state and slider from DecisionTree (moved to BrainViewer)
+12. **src/Plots/BrainViewer.js** - Added internal saturation state management with default value 0.25 (line 43)
+13. **src/Plots/BrainViewer.js** - Removed saturation prop from component signature (line 36)
+14. **src/Plots/BrainViewer.js** - Removed bottom border radius from position slider (lines 401-402)
+15. **src/Plots/BrainViewer.js** - Added saturation slider below position slider with matching styling (lines 442-490)
+
+### Description
+The component list and classification path cards have a fixed width of 400px and are vertically centered in the right column, creating a balanced layout. Both cards now include their respective titles ("All Components"/"Affected Components" and "Classification Path") inside the card itself.
+
+The classification path uses left-alignment with the initial state at the root level and subsequent classification changes indented 20px to the right, creating a clear visual hierarchy.
+
+The visualization card now takes the full width of the right column (minus the column's 24px padding on each side). The TimeSeries and BrainViewer visualizations are sized at 880px wide to fill the card width (accounting for 16px padding on each side), making efficient use of the available screen space. The BrainViewer height was increased to 420px to prevent brain images from being cropped.
+
+The position and saturation sliders are now vertically aligned and styled consistently with the same background color (white in light mode, dark in dark mode), matching padding (8px 16px), centered layout, and consistent label/value text styling (12px font, 70px min-width labels).
+
