@@ -324,6 +324,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         crossComponentMetrics,
         qcNiftiBuffers,
         externalRegressorsFigure,
+        hasManualClassifications: manualClassificationData && manualClassificationData.length > 0,
       });
     },
     [onDataLoad, onLoadingStart]
@@ -540,6 +541,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         crossComponentMetrics,
         qcNiftiBuffers,
         externalRegressorsFigure,
+        hasManualClassifications: manualClassificationData && manualClassificationData.length > 0,
       });
     },
     [onDataLoad, onLoadingStart]

@@ -5,6 +5,7 @@ import { HelmetProvider, Helmet } from "react-helmet-async";
 import IntroPopup from "./PopUps/IntroPopUp";
 import AboutPopup from "./PopUps/AboutPopUp";
 import ChangelogPopup from "./PopUps/ChangelogPopUp";
+import ManualClassificationWarningPopUp from "./PopUps/ManualClassificationWarningPopUp";
 import MobileMain from "./Mobile";
 
 import "./styles/output.css";
@@ -52,6 +53,7 @@ function App() {
   const [showIntroPopup, setShowIntroPopup] = useState(true);
   const [showAboutPopup, setShowAboutPopup] = useState(false);
   const [showChangelogPopup, setShowChangelogPopup] = useState(false);
+  const [showManualClassificationWarning, setShowManualClassificationWarning] = useState(false);
   const [showTabs, setShowTabs] = useState(false);
   const [originalData, setOriginalData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -132,6 +134,10 @@ function App() {
     setShowChangelogPopup((prev) => !prev);
   }, []);
 
+  const toggleManualClassificationWarning = useCallback(() => {
+    setShowManualClassificationWarning((prev) => !prev);
+  }, []);
+
   // Mark version as seen in localStorage
   const handleVersionSeen = useCallback((version) => {
     localStorage.setItem("rica-last-seen-version", version);
@@ -172,6 +178,11 @@ function App() {
       setExternalRegressorsFigure(data.externalRegressorsFigure);
       setIsLoading(false);
       toggleIntroPopup();
+      
+      // Show manual classification warning if applicable
+      if (data.hasManualClassifications) {
+        setShowManualClassificationWarning(true);
+      }
     },
     [toggleIntroPopup]
   );
@@ -201,6 +212,12 @@ function App() {
             />
           )}
           {showAboutPopup && <AboutPopup closePopup={toggleAboutPopup} isDark={isDark} />}
+          {showManualClassificationWarning && (
+            <ManualClassificationWarningPopUp
+              closePopup={toggleManualClassificationWarning}
+              isDark={isDark}
+            />
+          )}
           {showChangelogPopup && (
             <ChangelogPopup
               closePopup={toggleChangelogPopup}
