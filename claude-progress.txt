@@ -3,7 +3,7 @@
 ## Project Overview
 
 **Name**: rica (Reports for ICA)
-**Version**: 1.1.2
+**Version**: 2.0.2
 **Purpose**: React-based interactive visualization tool for multi-echo fMRI ICA component analysis from tedana/ME-ICA outputs.
 
 ### Main Libraries (v2.0.0)
@@ -2079,6 +2079,115 @@ Authors (Year). Rica: Reports for ICA (Version X.X.X). Zenodo. https://doi.org/D
 ### Build Status
 - ESLint passes with no errors or warnings
 - Dev server compiles successfully
+
+---
+
+## Release v2.0.1 (2026-01-12)
+
+### Release Notes
+Created GitHub release v2.0.1 with the following highlights:
+
+**Special thanks to Jon Brooks for his feedback.**
+
+### User Experience Improvements
+- Simplified toggle buttons (single buttons, blue when active)
+- localStorage persistence for all user preferences
+- Regroup toggle for keeping components in place vs regrouping
+- Collapsible component table
+- Interactive/Static view toggle
+
+### New Features
+- Citation popup with Zenodo DOI after saving classifications
+- Changelog popup showing GitHub releases on new version
+- Interactive external regressor correlation heatmap
+
+### Bug Fixes
+- Logo rendering (ICO to PNG conversion)
+- Command injection fix in lint.sh
+
+### Release URL
+https://github.com/ME-ICA/rica/releases/tag/v2.0.1
+
+---
+
+## Session 19 - Manual Classification Loading (2026-01-13)
+
+### Goals
+- Add support for loading existing manual_classification.tsv files
+- Show warning popup when folder contains previous manual classifications
+- Restore user's previous reclassifications automatically
+
+### Changes Made (PR #83)
+
+#### Data Loading
+1. **src/PopUps/IntroPopUp.js**:
+   - Added pattern matching for `manual_classification.tsv` files
+   - Parse manual classification TSV to detect reclassified components
+   - Compare with original metrics to find changed classifications
+   - Show warning popup listing all manually reclassified components
+
+2. **src/Plots/PlotUtils.js**:
+   - Added helper functions for TSV parsing with null checks
+   - Explicit tab delimiter handling for robust parsing
+   - Error handling and logging for debugging
+
+3. **src/PopUps/ManualClassificationPopUp.js** (new file):
+   - Warning popup component showing list of reclassified components
+   - Displays component name, original classification, and new classification
+   - "Continue" button to proceed with loading
+   - Theme-aware styling (light/dark mode support)
+
+### Technical Details
+
+**File Detection:**
+- Looks for `manual_classification.tsv` in the loaded folder
+- Compares classification columns between original metrics and manual classification
+- Components with changed classifications are flagged
+
+**Warning Popup:**
+- Lists each reclassified component with before/after classification
+- Helps users understand what previous changes will be applied
+- Allows users to proceed with informed consent
+
+### Files Created
+- `src/PopUps/ManualClassificationPopUp.js`
+
+### Files Modified
+- `src/PopUps/IntroPopUp.js` - Load and parse manual classification
+- `src/Plots/PlotUtils.js` - Helper functions for TSV parsing
+- `src/index.js` - State management for warning popup
+
+### Features Added
+- `load_manual_classification`: Load existing manual_classification.tsv and restore previous reclassifications
+
+### Build Status
+- Build completed successfully
+- All existing features remain functional
+
+---
+
+## Release v2.0.2 (2026-01-13)
+
+### Release Notes
+
+**New Feature: Load Existing Manual Classifications**
+
+Rica now automatically detects and loads `manual_classification.tsv` files from your tedana output folder. This means:
+- Your previous component reclassifications are automatically restored
+- A warning popup shows which components were previously reclassified
+- You can continue refining your classifications from where you left off
+
+### What's New
+- **Manual Classification Loading**: Automatically loads existing `manual_classification.tsv` files
+- **Warning Popup**: Shows list of previously reclassified components before loading
+- **Robust TSV Parsing**: Improved null checks and explicit tab delimiter handling
+
+### Bug Fixes
+- Fixed TSV parsing edge cases with null values
+- Added error handling for malformed manual classification files
+
+### Release URL
+https://github.com/ME-ICA/rica/releases/tag/v2.0.2
 
 ---
 
