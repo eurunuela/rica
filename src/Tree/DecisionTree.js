@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { isDecisionNode, getAffectingNodes } from "../utils/decisionTreeUtils";
 import TimeSeries from "../Plots/TimeSeries";
 import BrainViewer from "../Plots/BrainViewer";
@@ -13,6 +13,7 @@ import { formatComponentName } from "../Plots/PlotUtils";
 function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, niftiBuffer, maskBuffer, isDark }) {
   const [selectedNode, setSelectedNode] = useState(null);
   const [selectedComponent, setSelectedComponent] = useState(null);
+  const selectedComponentRef = useRef(null);
 
   // Theme colors
   const colors = useMemo(
@@ -135,6 +136,16 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
     rejected: isDark ? "#f87171" : "#FCA5A5",
     rejectedHover: isDark ? "#ef4444" : "#EF4444",
   }), []);
+
+  // Scroll to selected component
+  useEffect(() => {
+    if (selectedComponent && selectedComponentRef.current) {
+      selectedComponentRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedComponent]);
 
   if (!treeData || !treeData.nodes || treeData.nodes.length === 0) {
     return (
@@ -381,20 +392,25 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
                   return (
                     <div
                       key={id}
+                      ref={selectedComponent === id ? selectedComponentRef : null}
                       onClick={(e) => handleComponentClick(id, e)}
                       style={{
                         padding: "10px",
-                        backgroundColor: colors.bg,
-                        border: `1px solid ${selectedComponent === id ? colors.selected : colors.border}`,
+                        backgroundColor: selectedComponent === id ? colors.bgHover : colors.bg,
+                        border: `2px solid ${selectedComponent === id ? colors.selected : colors.border}`,
                         borderRadius: "6px",
                         cursor: "pointer",
                         transition: "all 0.15s ease",
                       }}
                       onMouseEnter={(e) => {
+                        if (selectedComponent !== id) {
+                          e.currentTarget.style.backgroundColor = colors.bgHover;
+                        }
                         e.currentTarget.style.borderColor = colors.borderHover;
                       }}
                       onMouseLeave={(e) => {
                         if (selectedComponent !== id) {
+                          e.currentTarget.style.backgroundColor = colors.bg;
                           e.currentTarget.style.borderColor = colors.border;
                         }
                       }}
@@ -436,20 +452,25 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
                 return (
                   <div
                     key={id}
+                    ref={selectedComponent === id ? selectedComponentRef : null}
                     onClick={(e) => handleComponentClick(id, e)}
                     style={{
                       padding: "10px",
-                      backgroundColor: colors.bg,
-                      border: `1px solid ${selectedComponent === id ? colors.selected : colors.border}`,
+                      backgroundColor: selectedComponent === id ? colors.bgHover : colors.bg,
+                      border: `2px solid ${selectedComponent === id ? colors.selected : colors.border}`,
                       borderRadius: "6px",
                       cursor: "pointer",
                       transition: "all 0.15s ease",
                     }}
                     onMouseEnter={(e) => {
+                      if (selectedComponent !== id) {
+                        e.currentTarget.style.backgroundColor = colors.bgHover;
+                      }
                       e.currentTarget.style.borderColor = colors.borderHover;
                     }}
                     onMouseLeave={(e) => {
                       if (selectedComponent !== id) {
+                        e.currentTarget.style.backgroundColor = colors.bg;
                         e.currentTarget.style.borderColor = colors.border;
                       }
                     }}
