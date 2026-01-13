@@ -2191,6 +2191,132 @@ https://github.com/ME-ICA/rica/releases/tag/v2.0.2
 
 ---
 
+## Session 20 - Interactive Decision Tree Visualization (2026-01-13)
+
+### Goals
+- Implement GitHub Issue #91: Interactive decision tree visualization
+- Allow users to explore tedana's classification decision flow
+- Show how each component was classified through the decision tree
+
+### Changes Made
+
+#### New Dependencies (package.json)
+- Added `@visx/hierarchy` v3.3.0 for tree visualization support
+
+#### Data Loading (IntroPopUp.js)
+1. Added pattern matching for `decision_tree.json` and `status_table.tsv` files
+2. Parse decision tree JSON containing node structure and execution outputs
+3. Parse status table TSV showing component classification at each node
+4. Pass decision tree data to parent component
+5. Updated both folder upload and local server loading paths
+
+#### Server Updates (rica_server.py)
+- Added file patterns: `decision_tree.json`, `status_table.tsv`
+- Enables automatic loading when using local server
+
+#### New Utility Functions (src/utils/decisionTreeUtils.js)
+Created comprehensive decision tree parsing utilities:
+- `parseDecisionTree()` - Extract nodes with labels, conditions, and output counts
+- `parseStatusTable()` - Build component path data structure
+- `getComponentPath()` - Get classification path for a specific component
+- `getAffectingNodes()` - Get nodes that changed a component's classification
+- `isDecisionNode()` / `isCalculationNode()` - Node type detection
+- `getFinalClassification()` - Get final classification from path
+- `buildHierarchicalTree()` - Convert sequential nodes to hierarchical structure
+
+#### State Management (index.js)
+1. Added state: `decisionTreeData`, `statusTableData`
+2. Updated `onDataLoad` to extract decision tree data
+3. Added new "Tree" tab in navigation (index 4, after QC)
+4. Imported `faProjectDiagram` icon for Tree tab
+5. Conditionally show Tree tab only when decision tree data exists
+6. Pass decision tree data and status table to DecisionTreeTab component
+
+#### New Tree Tab (src/Tree/DecisionTreeTab.js)
+Container component for decision tree visualization:
+- Parses decision tree JSON and status table data
+- Shows tree summary (tree ID, node count, component count)
+- Header with description of decision tree purpose
+- Renders DecisionTree visualization component
+- Fallback message when tree data not available
+
+#### Decision Tree Visualization (src/Tree/DecisionTree.js)
+Interactive visualization component:
+- Sequential node display (tedana's tree is not branching)
+- Each node shows:
+  - Type badge (Decision or Calculation)
+  - Node label and condition
+  - True/False counts for decision nodes
+  - Outcome classifications (if_true, if_false)
+  - Comments explaining node purpose
+- Click node to filter affected components
+- Click component to view classification path
+- Path display shows:
+  - Initial classification state
+  - Changes at each node
+  - Which nodes affected the component
+- Highlighting:
+  - Selected node highlighted
+  - Affecting nodes highlighted when component selected
+- Theme support (light/dark mode)
+- Sticky component panel on right side
+
+### Features Added
+- **decision_tree_visualization**: Interactive exploration of tedana's decision tree
+  - View sequential decision nodes and calculation nodes
+  - See which components were affected by each node
+  - Trace individual component classification paths
+  - Understand classification rationale
+
+### Files Created
+1. `src/utils/decisionTreeUtils.js` - Decision tree parsing utilities
+2. `src/Tree/DecisionTreeTab.js` - Tab container component
+3. `src/Tree/DecisionTree.js` - Interactive visualization component
+
+### Files Modified
+1. `package.json` - Added @visx/hierarchy dependency
+2. `src/PopUps/IntroPopUp.js` - Load decision tree and status table files
+3. `src/index.js` - Add state, Tree tab, and routing
+4. `scripts/rica_server.py` - Add decision tree file patterns
+5. `features.json` - Add decision_tree_visualization feature
+6. `claude-progress.txt` - This session documentation
+
+### Technical Details
+
+**Decision Tree Structure:**
+- Tedana's tree is sequential (not branching)
+- Each node processes components in order
+- Nodes can be:
+  - Decision nodes: Compare metrics and change classifications
+  - Calculation nodes: Compute derived metrics (e.g., elbows)
+- Status table tracks component classification after each node
+
+**Visualization Approach:**
+- Vertical list of nodes (not traditional tree diagram)
+- Reflects sequential nature of tedana's execution
+- Interactive filtering to explore node-component relationships
+
+**Data Flow:**
+```
+decision_tree.json + status_table.tsv
+    ↓ (IntroPopUp.js)
+Parse and extract
+    ↓ (index.js)
+State management
+    ↓ (DecisionTreeTab.js)
+Parse with utilities
+    ↓ (DecisionTree.js)
+Interactive visualization
+```
+
+### Next Steps
+- Test with real tedana output containing decision tree files
+- Potentially add visual tree diagram using d3-hierarchy for future enhancement
+- Consider adding filtering by classification outcome
+- May add export/print functionality for decision paths
+
+---
+
 ## Template for Future Sessions
 
 ```

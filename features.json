@@ -757,6 +757,25 @@
         "Make additional changes and save to update the manual_classification.tsv"
       ],
       "passes": true
+    },
+    {
+      "id": "decision_tree_visualization",
+      "category": "visualization",
+      "description": "Display interactive decision tree showing how tedana classified each component",
+      "steps": [
+        "Load a tedana folder containing decision_tree.json and status_table.tsv files",
+        "Verify 'Tree' tab appears in navigation (after QC tab)",
+        "Navigate to the 'Tree' tab",
+        "Verify decision tree summary shows tree ID, node count, and component count",
+        "Verify decision tree nodes are displayed in sequential order",
+        "Verify each node shows its type (Decision or Calculation), label, and counts",
+        "Click on a decision node to view affected components",
+        "Verify affected components list appears on right side",
+        "Click on a component to view its classification path",
+        "Verify path shows initial state and changes at each node",
+        "Verify nodes that affected the selected component are highlighted"
+      ],
+      "passes": false
     }
   ]
 }
