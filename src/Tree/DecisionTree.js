@@ -104,7 +104,6 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
           flex: 2,
           display: "flex",
           flexDirection: "column",
-          gap: "12px",
         }}
       >
         <h3
@@ -112,7 +111,7 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
             fontSize: "14px",
             fontWeight: "600",
             color: colors.text,
-            marginBottom: "8px",
+            marginBottom: "16px",
           }}
         >
           Decision Tree Flow
@@ -121,21 +120,23 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
           const isDecision = isDecisionNode(node);
           const isSelected = selectedNode === index;
           const isAffecting = affectingNodeIndices.includes(index);
+          const isLastNode = index === treeData.nodes.length - 1;
 
           return (
-            <div
-              key={index}
-              onClick={() => handleNodeClick(node)}
-              style={{
-                padding: "16px",
-                backgroundColor: isSelected ? colors.bgHover : colors.bgElevated,
-                border: `2px solid ${
-                  isSelected ? colors.selected : isAffecting ? colors.decision : colors.border
-                }`,
-                borderRadius: "8px",
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-              }}
+            <div key={index} style={{ display: "flex", flexDirection: "column" }}>
+              {/* Node Card */}
+              <div
+                onClick={() => handleNodeClick(node)}
+                style={{
+                  padding: "16px",
+                  backgroundColor: isSelected ? colors.bgHover : colors.bgElevated,
+                  border: `2px solid ${
+                    isSelected ? colors.selected : isAffecting ? colors.decision : colors.border
+                  }`,
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
               onMouseEnter={(e) => {
                 if (!isSelected) {
                   e.currentTarget.style.backgroundColor = colors.bgHover;
@@ -231,6 +232,26 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
                   {node.comment}
                 </div>
               )}
+              </div>
+
+              {/* Connecting Line */}
+              {!isLastNode && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    padding: "8px 0",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "2px",
+                      height: "32px",
+                      backgroundColor: colors.border,
+                    }}
+                  />
+                </div>
+              )}
             </div>
           );
         })}
@@ -243,9 +264,9 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
           display: "flex",
           flexDirection: "column",
           position: "sticky",
-          top: "24px",
+          top: "120px",
           alignSelf: "flex-start",
-          maxHeight: "calc(100vh - 300px)",
+          maxHeight: "calc(100vh - 160px)",
         }}
       >
         <h3
