@@ -121,6 +121,8 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
           const isSelected = selectedNode === index;
           const isAffecting = affectingNodeIndices.includes(index);
           const isLastNode = index === treeData.nodes.length - 1;
+          const hasSelection = selectedNode !== null || selectedComponent !== null;
+          const shouldDim = hasSelection && !isSelected && !isAffecting;
 
           return (
             <div key={index} style={{ display: "flex", flexDirection: "column" }}>
@@ -136,6 +138,7 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
                   borderRadius: "8px",
                   cursor: "pointer",
                   transition: "all 0.15s ease",
+                  opacity: shouldDim ? 0.4 : 1,
                 }}
               onMouseEnter={(e) => {
                 if (!isSelected) {
@@ -248,6 +251,8 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
                       width: "2px",
                       height: "32px",
                       backgroundColor: colors.border,
+                      opacity: shouldDim ? 0.4 : 1,
+                      transition: "all 0.15s ease",
                     }}
                   />
                 </div>
