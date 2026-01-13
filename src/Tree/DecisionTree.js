@@ -416,9 +416,12 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
               borderRadius: "8px",
             }}
           >
-            <h4 style={{ fontSize: "13px", fontWeight: "600", color: colors.text, marginBottom: "12px" }}>
+            <h4 style={{ fontSize: "13px", fontWeight: "600", color: colors.text, marginBottom: "4px" }}>
               Classification Path
             </h4>
+            <p style={{ fontSize: "12px", color: colors.textSecondary, marginBottom: "12px" }}>
+              {selectedComponent.replace("_", " ")}
+            </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {/* Initial state */}
               <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px" }}>
