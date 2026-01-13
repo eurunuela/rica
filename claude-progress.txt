@@ -2373,3 +2373,23 @@ The visualization card now takes the full width of the right column (minus the c
 
 The position and saturation sliders are now vertically aligned and styled consistently with the same background color (white in light mode, dark in dark mode), matching padding (8px 16px), centered layout, and consistent label/value text styling (12px font, 70px min-width labels).
 
+
+## Session - Component Selection Highlighting and Auto-scroll (2026-01-13)
+
+### Goals
+- Add visual highlighting for selected components in the component list
+- Implement auto-scrolling to keep selected component visible
+
+### Changes Made
+1. **src/Tree/DecisionTree.js** - Added useRef and useEffect imports (line 1)
+2. **src/Tree/DecisionTree.js** - Added selectedComponentRef to track selected component element (line 16)
+3. **src/Tree/DecisionTree.js** - Added useEffect for smooth auto-scrolling to selected component (lines 140-148)
+4. **src/Tree/DecisionTree.js** - Added ref to selected component in "Affected Components" list (line 395)
+5. **src/Tree/DecisionTree.js** - Added background color highlighting (bgHover) for selected component (line 399)
+6. **src/Tree/DecisionTree.js** - Increased border thickness from 1px to 2px for selected component (line 400)
+7. **src/Tree/DecisionTree.js** - Updated hover behavior to change background color (lines 405-416)
+8. **src/Tree/DecisionTree.js** - Applied same changes to "All Components" list (lines 455-476)
+
+### Description
+Selected components in the component list now have enhanced visual feedback with a background color highlight (bgHover) and a thicker blue border (2px). When a component is selected, the view automatically scrolls smoothly to ensure the component remains visible within the scrollable list, improving navigation and user experience.
+
