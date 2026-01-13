@@ -1,6 +1,6 @@
 {
   "projectName": "rica",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "React-based interactive visualization tool for multi-echo fMRI ICA component analysis",
   "lastUpdated": "2026-01-13",
   "modernizationNotes": "v2.0.0 - Upgraded to React 18, functional components, removed 5s loading delay, added progress indicator, Notion-style popups",
