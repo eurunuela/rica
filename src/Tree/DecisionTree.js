@@ -90,15 +90,25 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
 
   // Get component index and data for visualizations
   const selectedComponentIndex = useMemo(() => {
-    if (!selectedComponent || !componentData || !componentData[0]) return null;
-    const index = componentData[0].findIndex((comp) => comp.Component === selectedComponent);
+    if (!selectedComponent || !componentData || !Array.isArray(componentData)) return null;
+
+    // componentData is passed as [array], so get the first element
+    const dataArray = Array.isArray(componentData[0]) ? componentData[0] : componentData;
+    if (!Array.isArray(dataArray) || dataArray.length === 0) return null;
+
+    const index = dataArray.findIndex((comp) => comp.Component === selectedComponent);
     return index >= 0 ? index : null;
   }, [selectedComponent, componentData]);
 
   // Get time series data for selected component
   const currentTimeSeries = useMemo(() => {
-    if (selectedComponentIndex === null || !mixingMatrix) return null;
-    return mixingMatrix.map((row) => row[selectedComponentIndex]);
+    if (selectedComponentIndex === null || !mixingMatrix || !Array.isArray(mixingMatrix)) return null;
+    try {
+      return mixingMatrix.map((row) => row[selectedComponentIndex]);
+    } catch (error) {
+      console.error("Error extracting time series:", error);
+      return null;
+    }
   }, [selectedComponentIndex, mixingMatrix]);
 
   // Get component label
@@ -530,7 +540,7 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
         )}
 
         {/* Component Visualizations */}
-        {selectedComponent && hasInteractiveViews && selectedComponentIndex !== null && (
+        {selectedComponent && hasInteractiveViews && selectedComponentIndex !== null && currentTimeSeries && (
           <div
             style={{
               display: "flex",

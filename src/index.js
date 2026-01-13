@@ -238,9 +238,9 @@ function App() {
               {/* Minimal Modern Navbar */}
               <nav
                 style={{
-                  display: "flex",
+                  display: "grid",
+                  gridTemplateColumns: "1fr auto 1fr",
                   alignItems: "center",
-                  justifyContent: "space-between",
                   padding: "12px 24px",
                   backgroundColor: "var(--bg-primary)",
                   borderBottom: "1px solid var(--border-default)",
@@ -277,9 +277,6 @@ function App() {
                     display: "flex",
                     alignItems: "center",
                     gap: "2px",
-                    position: "absolute",
-                    left: "50%",
-                    transform: "translateX(-50%)",
                   }}
                 >
                   <AnimatedTab index={0} isDark={isDark}>
@@ -322,7 +319,7 @@ function App() {
                 </TabList>
 
                 {/* Right: Action Buttons */}
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", justifyContent: "flex-end" }}>
                   {/* Theme toggle */}
                   <button
                     onClick={toggleTheme}
