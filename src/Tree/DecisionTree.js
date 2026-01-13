@@ -1,5 +1,9 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { isDecisionNode, getAffectingNodes } from "../utils/decisionTreeUtils";
+import TimeSeries from "../Plots/TimeSeries";
+import BrainViewer from "../Plots/BrainViewer";
+import FFTSpectrum from "../Plots/FFTSpectrum";
+import { formatComponentName } from "../Plots/PlotUtils";
 
 /**
  * Decision Tree Visualization Component
@@ -7,9 +11,10 @@ import { isDecisionNode, getAffectingNodes } from "../utils/decisionTreeUtils";
  * Displays tedana's sequential decision tree as an interactive flow chart.
  * Shows nodes, conditions, and component counts with click interactions.
  */
-function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
+function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, niftiBuffer, maskBuffer, isDark }) {
   const [selectedNode, setSelectedNode] = useState(null);
   const [selectedComponent, setSelectedComponent] = useState(null);
+  const [colormapSaturation, setColormapSaturation] = useState(0.25);
 
   // Theme colors
   const colors = useMemo(
@@ -83,6 +88,44 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
     return getAffectingNodes(selectedComponent, componentPaths);
   }, [selectedComponent, componentPaths]);
 
+  // Get component index and data for visualizations
+  const selectedComponentIndex = useMemo(() => {
+    if (!selectedComponent || !componentData || !componentData[0]) return null;
+    const index = componentData[0].findIndex((comp) => comp.Component === selectedComponent);
+    return index >= 0 ? index : null;
+  }, [selectedComponent, componentData]);
+
+  // Get time series data for selected component
+  const currentTimeSeries = useMemo(() => {
+    if (selectedComponentIndex === null || !mixingMatrix) return null;
+    return mixingMatrix.map((row) => row[selectedComponentIndex]);
+  }, [selectedComponentIndex, mixingMatrix]);
+
+  // Get component label
+  const currentComponentLabel = useMemo(() => {
+    if (!selectedComponent) return "";
+    return formatComponentName(selectedComponent);
+  }, [selectedComponent]);
+
+  // Get classification for selected component
+  const selectedClassification = useMemo(() => {
+    if (!selectedComponent || !componentPaths[selectedComponent]) return "accepted";
+    const path = componentPaths[selectedComponent];
+    const finalClass = path.nodes[path.nodes.length - 1]?.classification || path.initial;
+    return finalClass === "accepted" ? "accepted" : "rejected";
+  }, [selectedComponent, componentPaths]);
+
+  // Check if we have interactive views available
+  const hasInteractiveViews = mixingMatrix && niftiBuffer && maskBuffer;
+
+  // Theme-aware colors for visualizations
+  const getColors = useCallback((isDark) => ({
+    accepted: isDark ? "#4ade80" : "#86EFAC",
+    acceptedHover: isDark ? "#22c55e" : "#22C55E",
+    rejected: isDark ? "#f87171" : "#FCA5A5",
+    rejectedHover: isDark ? "#ef4444" : "#EF4444",
+  }), []);
+
   if (!treeData || !treeData.nodes || treeData.nodes.length === 0) {
     return (
       <div
@@ -103,14 +146,15 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
       style={{
         display: "flex",
         gap: "24px",
-        maxWidth: "1400px",
+        maxWidth: "100%",
         margin: "0 auto",
       }}
     >
       {/* Tree Flow - Left Side */}
       <div
         style={{
-          flex: 2,
+          flex: 1,
+          minWidth: "300px",
           display: "flex",
           flexDirection: "column",
         }}
@@ -273,17 +317,18 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
         })}
       </div>
 
-      {/* Component Details - Right Side */}
+      {/* Component Details and Visualizations - Right Side */}
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          flex: 1,
+          flex: 3,
           display: "flex",
           flexDirection: "column",
           position: "sticky",
           top: "0px",
           alignSelf: "flex-start",
           maxHeight: "calc(100vh - 120px)",
+          gap: "16px",
         }}
       >
         <h3
@@ -300,7 +345,8 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
         {/* Component List */}
         <div
           style={{
-            flex: 1,
+            minHeight: selectedComponent ? "150px" : "auto",
+            maxHeight: selectedComponent ? "200px" : "none",
             overflow: "auto",
             backgroundColor: colors.bgElevated,
             border: `1px solid ${colors.border}`,
@@ -479,6 +525,95 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* Component Visualizations */}
+        {selectedComponent && hasInteractiveViews && selectedComponentIndex !== null && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+              backgroundColor: colors.bgElevated,
+              border: `1px solid ${colors.border}`,
+              borderRadius: "8px",
+              padding: "16px",
+            }}
+          >
+            <h4 style={{ fontSize: "13px", fontWeight: "600", color: colors.text, marginBottom: "4px" }}>
+              Component Visualization
+            </h4>
+
+            {/* Time series */}
+            <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+              <TimeSeries
+                data={currentTimeSeries}
+                width={600}
+                height={120}
+                title="Time Series"
+                componentLabel={currentComponentLabel}
+                lineColor={selectedClassification === 'accepted' ? getColors(isDark).acceptedHover : getColors(isDark).rejectedHover}
+                isDark={isDark}
+              />
+            </div>
+
+            {/* Brain stat map viewer */}
+            <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+              <BrainViewer
+                niftiBuffer={niftiBuffer}
+                maskBuffer={maskBuffer}
+                componentIndex={selectedComponentIndex}
+                width={600}
+                height={220}
+                componentLabel={currentComponentLabel}
+                saturation={colormapSaturation}
+                isDark={isDark}
+              />
+            </div>
+
+            {/* Saturation slider */}
+            <div style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "12px",
+              padding: "4px 0",
+            }}>
+              <label htmlFor="tree-saturation-slider" style={{ fontSize: "11px", color: colors.textSecondary }}>
+                Saturation:
+              </label>
+              <input
+                id="tree-saturation-slider"
+                type="range"
+                min="1"
+                max="100"
+                value={colormapSaturation * 100}
+                onChange={(e) => setColormapSaturation(parseFloat(e.target.value) / 100)}
+                style={{
+                  width: "200px",
+                  cursor: "pointer",
+                  accentColor: "#3b82f6",
+                }}
+              />
+              <span style={{ fontSize: "11px", color: colors.textSecondary, minWidth: "35px", textAlign: "right" }}>
+                {Math.round(colormapSaturation * 100)}%
+              </span>
+            </div>
+
+            {/* FFT spectrum */}
+            <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+              <FFTSpectrum
+                timeSeries={currentTimeSeries}
+                width={600}
+                height={120}
+                title="Power Spectrum"
+                sampleRate={1}
+                lineColor={selectedClassification === 'accepted' ? getColors(isDark).acceptedHover : getColors(isDark).rejectedHover}
+                isDark={isDark}
+              />
             </div>
           </div>
         )}

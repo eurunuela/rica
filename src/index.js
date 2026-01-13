@@ -476,6 +476,9 @@ function App() {
                       decisionTreeData={decisionTreeData}
                       statusTableData={statusTableData}
                       componentData={componentData}
+                      mixingMatrix={mixingMatrix}
+                      niftiBuffer={niftiBuffer}
+                      maskBuffer={maskBuffer}
                       isDark={isDark}
                     />
                   </TabPanel>
