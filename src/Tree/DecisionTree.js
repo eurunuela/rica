@@ -90,33 +90,23 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
 
   // Get component index and data for visualizations
   const selectedComponentIndex = useMemo(() => {
-    if (!selectedComponent || !componentData || !Array.isArray(componentData)) {
-      console.log("[DecisionTree] No component/data:", { selectedComponent, hasComponentData: !!componentData });
-      return null;
-    }
+    if (!selectedComponent || !componentData || !Array.isArray(componentData)) return null;
 
     // componentData is passed as [array], so get the first element
     const dataArray = Array.isArray(componentData[0]) ? componentData[0] : componentData;
-    if (!Array.isArray(dataArray) || dataArray.length === 0) {
-      console.log("[DecisionTree] dataArray invalid");
-      return null;
-    }
+    if (!Array.isArray(dataArray) || dataArray.length === 0) return null;
 
     const index = dataArray.findIndex((comp) => comp.Component === selectedComponent);
-    console.log("[DecisionTree] Component lookup:", {
-      selectedComponent,
-      index,
-      firstComponent: dataArray[0]?.Component,
-      dataLength: dataArray.length
-    });
     return index >= 0 ? index : null;
   }, [selectedComponent, componentData]);
 
   // Get time series data for selected component
   const currentTimeSeries = useMemo(() => {
-    if (selectedComponentIndex === null || !mixingMatrix || !Array.isArray(mixingMatrix)) return null;
+    if (selectedComponentIndex === null || !mixingMatrix?.data) return null;
     try {
-      return mixingMatrix.map((row) => row[selectedComponentIndex]);
+      // mixingMatrix.data is structured as [componentIndex][timepoint]
+      const series = mixingMatrix.data[selectedComponentIndex];
+      return Array.isArray(series) && series.length > 0 ? series : null;
     } catch (error) {
       console.error("Error extracting time series:", error);
       return null;
@@ -138,18 +128,7 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
   }, [selectedComponent, componentPaths]);
 
   // Check if we have interactive views available
-  const hasInteractiveViews = mixingMatrix && niftiBuffer && maskBuffer;
-
-  console.log("[DecisionTree] Debug info:", {
-    selectedComponent,
-    selectedComponentIndex,
-    hasInteractiveViews,
-    hasMixingMatrix: !!mixingMatrix,
-    hasNiftiBuffer: !!niftiBuffer,
-    hasMaskBuffer: !!maskBuffer,
-    hasCurrentTimeSeries: !!currentTimeSeries,
-    mixingMatrixLength: mixingMatrix?.length
-  });
+  const hasInteractiveViews = !!(mixingMatrix?.data && niftiBuffer && maskBuffer);
 
   // Theme-aware colors for visualizations
   const getColors = useCallback((isDark) => ({
