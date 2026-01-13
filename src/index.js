@@ -277,6 +277,9 @@ function App() {
                     display: "flex",
                     alignItems: "center",
                     gap: "2px",
+                    position: "absolute",
+                    left: "50%",
+                    transform: "translateX(-50%)",
                   }}
                 >
                   <AnimatedTab index={0} isDark={isDark}>
