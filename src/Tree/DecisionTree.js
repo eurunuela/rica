@@ -333,7 +333,7 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          flex: 3,
+          width: "650px",
           display: "flex",
           flexDirection: "column",
           position: "sticky",
@@ -359,11 +359,13 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
           style={{
             minHeight: selectedComponent ? "150px" : "auto",
             maxHeight: selectedComponent ? "200px" : "none",
+            minWidth: "280px",
             overflow: "auto",
             backgroundColor: colors.bgElevated,
             border: `1px solid ${colors.border}`,
             borderRadius: "8px",
             padding: "12px",
+            alignSelf: "flex-start",
           }}
         >
           {selectedNode !== null ? (
@@ -479,11 +481,11 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
         {selectedComponent && componentPaths[selectedComponent] && (
           <div
             style={{
-              marginTop: "16px",
               padding: "16px",
               backgroundColor: colors.bgElevated,
               border: `1px solid ${colors.border}`,
               borderRadius: "8px",
+              alignSelf: "flex-start",
             }}
           >
             <h4 style={{ fontSize: "13px", fontWeight: "600", color: colors.text, marginBottom: "4px" }}>
@@ -552,6 +554,7 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
               border: `1px solid ${colors.border}`,
               borderRadius: "8px",
               padding: "16px",
+              alignSelf: "flex-start",
             }}
           >
             <h4 style={{ fontSize: "13px", fontWeight: "600", color: colors.text, marginBottom: "4px" }}>
@@ -559,7 +562,7 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
             </h4>
 
             {/* Time series */}
-            <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+            <div>
               <TimeSeries
                 data={currentTimeSeries}
                 width={600}
@@ -572,7 +575,7 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
             </div>
 
             {/* Brain stat map viewer */}
-            <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+            <div>
               <BrainViewer
                 niftiBuffer={niftiBuffer}
                 maskBuffer={maskBuffer}
@@ -587,10 +590,8 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
 
             {/* Saturation slider */}
             <div style={{
-              width: "100%",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
               gap: "12px",
               padding: "4px 0",
             }}>
@@ -616,7 +617,7 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
             </div>
 
             {/* FFT spectrum */}
-            <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+            <div>
               <FFTSpectrum
                 timeSeries={currentTimeSeries}
                 width={600}
