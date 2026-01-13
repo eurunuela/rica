@@ -50,7 +50,8 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
 
   // Handle node click
   const handleNodeClick = useCallback(
-    (node) => {
+    (node, e) => {
+      e.stopPropagation();
       setSelectedNode(node.index);
       setSelectedComponent(null);
     },
@@ -58,9 +59,16 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
   );
 
   // Handle component click
-  const handleComponentClick = useCallback((componentId) => {
+  const handleComponentClick = useCallback((componentId, e) => {
+    e.stopPropagation();
     setSelectedComponent(componentId);
     setSelectedNode(null);
+  }, []);
+
+  // Handle reset (click outside)
+  const handleReset = useCallback(() => {
+    setSelectedNode(null);
+    setSelectedComponent(null);
   }, []);
 
   // Get affected components for selected node
@@ -91,6 +99,7 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
 
   return (
     <div
+      onClick={handleReset}
       style={{
         display: "flex",
         gap: "24px",
@@ -128,17 +137,19 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
             <div key={index} style={{ display: "flex", flexDirection: "column" }}>
               {/* Node Card */}
               <div
-                onClick={() => handleNodeClick(node)}
+                onClick={(e) => handleNodeClick(node, e)}
                 style={{
-                  padding: "16px",
+                  padding: shouldDim ? "8px 16px" : "16px",
                   backgroundColor: isSelected ? colors.bgHover : colors.bgElevated,
                   border: `2px solid ${
                     isSelected ? colors.selected : isAffecting ? colors.decision : colors.border
                   }`,
                   borderRadius: "8px",
                   cursor: "pointer",
-                  transition: "all 0.15s ease",
+                  transition: "all 0.2s ease",
                   opacity: shouldDim ? 0.4 : 1,
+                  maxHeight: shouldDim ? "60px" : "none",
+                  overflow: shouldDim ? "hidden" : "visible",
                 }}
               onMouseEnter={(e) => {
                 if (!isSelected) {
@@ -243,16 +254,16 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
                   style={{
                     display: "flex",
                     justifyContent: "center",
-                    padding: "8px 0",
+                    padding: shouldDim ? "4px 0" : "8px 0",
                   }}
                 >
                   <div
                     style={{
                       width: "2px",
-                      height: "32px",
+                      height: shouldDim ? "16px" : "32px",
                       backgroundColor: colors.border,
                       opacity: shouldDim ? 0.4 : 1,
-                      transition: "all 0.15s ease",
+                      transition: "all 0.2s ease",
                     }}
                   />
                 </div>
@@ -264,14 +275,15 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
 
       {/* Component Details - Right Side */}
       <div
+        onClick={(e) => e.stopPropagation()}
         style={{
           flex: 1,
           display: "flex",
           flexDirection: "column",
           position: "sticky",
-          top: "120px",
+          top: "0px",
           alignSelf: "flex-start",
-          maxHeight: "calc(100vh - 160px)",
+          maxHeight: "calc(100vh - 120px)",
         }}
       >
         <h3
@@ -308,7 +320,7 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
                   return (
                     <div
                       key={id}
-                      onClick={() => handleComponentClick(id)}
+                      onClick={(e) => handleComponentClick(id, e)}
                       style={{
                         padding: "10px",
                         backgroundColor: colors.bg,
@@ -363,7 +375,7 @@ function DecisionTree({ treeData, componentPaths, componentData, isDark }) {
                 return (
                   <div
                     key={id}
-                    onClick={() => handleComponentClick(id)}
+                    onClick={(e) => handleComponentClick(id, e)}
                     style={{
                       padding: "10px",
                       backgroundColor: colors.bg,

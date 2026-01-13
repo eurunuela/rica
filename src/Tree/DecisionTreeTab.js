@@ -64,9 +64,9 @@ function DecisionTreeTab({ decisionTreeData, statusTableData, componentData, isD
       style={{
         display: "flex",
         flexDirection: "column",
-        height: "100%",
+        height: "calc(100vh - 60px)",
         backgroundColor: "var(--bg-primary)",
-        overflow: "hidden",
+        overflow: "auto",
       }}
     >
       {/* Header */}
@@ -132,8 +132,6 @@ function DecisionTreeTab({ decisionTreeData, statusTableData, componentData, isD
       {/* Decision Tree Visualization */}
       <div
         style={{
-          flex: 1,
-          overflow: "auto",
           padding: "24px",
         }}
       >
