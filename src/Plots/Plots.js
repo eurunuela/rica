@@ -551,7 +551,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
                   maskBuffer={maskBuffer}
                   componentIndex={selectedIndex}
                   width={750}
-                  height={500}
+                  height={560}
                   componentLabel={currentComponentLabel}
                   isDark={isDark}
                 />

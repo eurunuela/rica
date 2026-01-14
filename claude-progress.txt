@@ -2447,7 +2447,7 @@ The bug had multiple related causes:
 
 ### Changes Made
 1. **src/Plots/Plots.js** - Removed unused `colormapSaturation` state declaration (line 38)
-2. **src/Plots/Plots.js** - Increased BrainViewer height from 280px to 500px to show internal sliders (line 554)
+2. **src/Plots/Plots.js** - Increased BrainViewer height from 280px to 560px to show internal sliders (line 554)
 3. **src/Plots/Plots.js** - Removed unused `saturation={colormapSaturation}` prop from BrainViewer (line 557)
 4. **src/Plots/Plots.js** - Removed the entire external saturation slider div (lines 562-595, ~35 lines removed)
 
