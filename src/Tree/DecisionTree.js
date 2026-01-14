@@ -14,24 +14,31 @@ function formatClassification(value) {
   const isAccept = lowerValue.includes("accept");
   const isReject = lowerValue.includes("reject");
 
-  // Format the text: split camelCase/concatenated words and capitalize
-  let text = value;
-  if (lowerValue === "provisionalaccept") {
-    text = "Provisional Accept";
-  } else if (lowerValue === "provisionalreject") {
-    text = "Provisional Reject";
-  } else if (lowerValue === "accepted") {
-    text = "Accepted";
-  } else if (lowerValue === "rejected") {
-    text = "Rejected";
-  } else if (lowerValue === "unclassified") {
-    text = "Unclassified";
-  } else if (lowerValue === "nochange") {
-    text = "No Change";
-  } else {
-    // Generic formatting: insert space before capitals and capitalize first letter
-    text = value.replace(/([a-z])([A-Z])/g, '$1 $2')
-                .replace(/^./, str => str.toUpperCase());
+  // Format the text based on known classification values
+  let text;
+  switch (lowerValue) {
+    case "provisionalaccept":
+      text = "Provisional Accept";
+      break;
+    case "provisionalreject":
+      text = "Provisional Reject";
+      break;
+    case "accepted":
+      text = "Accepted";
+      break;
+    case "rejected":
+      text = "Rejected";
+      break;
+    case "unclassified":
+      text = "Unclassified";
+      break;
+    case "nochange":
+      text = "No Change";
+      break;
+    default:
+      // Generic formatting: insert space before capitals and capitalize first letter
+      text = value.replace(/([a-z])([A-Z])/g, '$1 $2')
+                  .replace(/^./, str => str.toUpperCase());
   }
 
   return { text, isAccept, isReject };
@@ -98,17 +105,17 @@ function ComponentListItem({ id, path, isSelected, colors, onClick, innerRef }) 
   );
 }
 
+// Calculate default width based on viewport (defined outside hook to avoid recreation)
+const getDefaultWidth = () => {
+  if (typeof window !== 'undefined') {
+    // Right column takes flex: 1 (50% of content area), minus padding (24px * 2 + 16px * 2)
+    return Math.floor(window.innerWidth * 0.5) - 80;
+  }
+  return 800;
+};
+
 // Hook to measure container width with better initialization
 function useContainerWidth(ref, isActive) {
-  // Calculate initial width based on viewport: right column is 50% of screen width minus padding
-  const getDefaultWidth = () => {
-    if (typeof window !== 'undefined') {
-      // Right column takes flex: 1 (50% of content area), minus padding (24px * 2 + 16px * 2)
-      return Math.floor(window.innerWidth * 0.5) - 80;
-    }
-    return 800;
-  };
-
   const [width, setWidth] = useState(getDefaultWidth);
 
   useEffect(() => {
@@ -717,7 +724,7 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
                 maskBuffer={maskBuffer}
                 componentIndex={selectedComponentIndex}
                 width={containerWidth}
-                height={Math.max(400, Math.min(650, window.innerHeight - 700))}
+                height={560}
                 componentLabel={currentComponentLabel}
                 isDark={isDark}
               />
