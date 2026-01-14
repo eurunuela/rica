@@ -35,7 +35,6 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedClassification, setSelectedClassification] = useState("accepted");
   const [clickedElement, setClickedElement] = useState("");
-  const [colormapSaturation, setColormapSaturation] = useState(0.25); // Default 25%
 
   // Toggle for static PNG vs interactive Niivue - persisted to localStorage
   const [useStaticView, setUseStaticView] = useState(() => {
@@ -552,46 +551,10 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
                   maskBuffer={maskBuffer}
                   componentIndex={selectedIndex}
                   width={750}
-                  height={280}
+                  height={500}
                   componentLabel={currentComponentLabel}
-                  saturation={colormapSaturation}
                   isDark={isDark}
                 />
-              </div>
-
-              {/* Saturation slider */}
-              <div style={{
-                width: '100%',
-                maxWidth: '750px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '12px',
-                padding: '4px 0',
-              }}>
-                <label htmlFor="saturation-slider" style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Saturation:</label>
-                <input
-                  id="saturation-slider"
-                  type="range"
-                  min="1"
-                  max="100"
-                  value={colormapSaturation * 100}
-                  onChange={(e) => setColormapSaturation(parseFloat(e.target.value) / 100)}
-                  aria-label="Adjust brain map colormap saturation"
-                  aria-valuemin={1}
-                  aria-valuemax={100}
-                  aria-valuenow={Math.round(colormapSaturation * 100)}
-                  className="focus:outline-none"
-                  style={{
-                    width: '300px',
-                    cursor: 'pointer',
-                    accentColor: '#3b82f6',
-                    outline: 'none',
-                  }}
-                />
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', minWidth: '40px', textAlign: 'right' }}>
-                  {Math.round(colormapSaturation * 100)}%
-                </span>
               </div>
 
               {/* FFT on bottom */}
