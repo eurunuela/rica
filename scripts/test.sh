@@ -77,24 +77,24 @@ echo "Rica Test Suite"
 echo "============================================"
 echo ""
 
-# Build the command arguments array (safe from injection)
-ARGS=()
+# Build the command
+CMD="npm test --"
 
 if [ "$CI_MODE" = true ]; then
-    ARGS+=("--watchAll=false")
+    CMD="$CMD --watchAll=false"
 fi
 
 if [ "$COVERAGE" = true ]; then
-    ARGS+=("--coverage")
+    CMD="$CMD --coverage"
 fi
 
 if [ -n "$TEST_FILE" ]; then
-    ARGS+=("$TEST_FILE")
+    CMD="$CMD $TEST_FILE"
 fi
 
 # Note about current test status
 echo "Note: Test infrastructure is being set up. Limited tests may be available."
 echo ""
 
-# Run tests (using array expansion to safely pass arguments)
-npm test -- "${ARGS[@]}"
+# Run tests
+eval $CMD

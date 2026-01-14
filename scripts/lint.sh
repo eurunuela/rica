@@ -82,27 +82,27 @@ echo ""
 echo "Target: $TARGET"
 echo ""
 
-# Build the command arguments array (safe from injection)
-CMD=(npx eslint)
+# Build the command
+CMD="npx eslint"
 
 if [ "$FIX" = true ]; then
-    CMD+=("--fix")
+    CMD="$CMD --fix"
     echo "Mode: Fix"
 else
     echo "Mode: Check only (use --fix to auto-fix)"
 fi
 
 if [ "$QUIET" = true ]; then
-    CMD+=("--quiet")
+    CMD="$CMD --quiet"
 fi
 
 # Add file extensions and target
-CMD+=("--ext" ".js,.jsx" "$TARGET")
+CMD="$CMD --ext .js,.jsx $TARGET"
 
 echo ""
 
-# Run linter (using array expansion to safely pass arguments)
-"${CMD[@]}"
+# Run linter
+$CMD
 
 LINT_EXIT=$?
 
