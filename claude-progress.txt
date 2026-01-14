@@ -2420,3 +2420,42 @@ TimeSeries height scales at 15% of container width (min 150px, max 200px) while 
 ### Description
 The time series and brain stat map visualizations in the Tree tab now dynamically scale to fill the full width of their parent container, providing a better viewing experience on larger monitors (27" and above). On laptop screens, the visualizations maintain their minimum sizes, while on larger screens they expand proportionally to use the available space effectively. The visualization card height also scales automatically based on content, ensuring nothing is cropped and the sliders remain fully visible.
 
+
+## Session - Fix Dynamic Brain Map Visualization Bug (2026-01-14)
+
+### Goals
+- Fix GitHub issue #93: Dynamic brain map visualization not working
+- Fix saturation slider not responding to changes
+- Fix position slider not being visible
+- Fix misaligned brain slices
+
+### Root Cause Analysis
+The bug had multiple related causes:
+
+1. **BrainViewer height too small**: The BrainViewer component in Plots.js was given `height={280}` but the component needs:
+   - Title: ~26px
+   - Canvas with minHeight: 350px
+   - Position slider: ~38px
+   - Saturation slider: ~38px
+   - Total minimum needed: ~452px
+
+   With only 280px allocated, the sliders were being cut off and not visible.
+
+2. **Duplicate saturation slider with broken connection**: Plots.js had an external saturation slider that passed `saturation={colormapSaturation}` as a prop to BrainViewer. However, BrainViewer never destructured or used this prop - it had its own internal saturation state. This meant the external slider appeared to do nothing.
+
+3. **Redundant code**: There were two saturation sliders - one internal to BrainViewer (that worked but was cut off) and one external in Plots.js (that was visible but disconnected).
+
+### Changes Made
+1. **src/Plots/Plots.js** - Removed unused `colormapSaturation` state declaration (line 38)
+2. **src/Plots/Plots.js** - Increased BrainViewer height from 280px to 560px to show internal sliders (line 554)
+3. **src/Plots/Plots.js** - Removed unused `saturation={colormapSaturation}` prop from BrainViewer (line 557)
+4. **src/Plots/Plots.js** - Removed the entire external saturation slider div (lines 562-595, ~35 lines removed)
+
+### Features Updated
+- display_brain_stat_map: passes=true (brain viewer now properly shows interactive controls)
+- ica_brain_map_position_slider: passes=true (position slider now visible and functional)
+- adjust_colormap_saturation: passes=true (saturation slider now visible and functional)
+
+### Technical Notes
+The BrainViewer component was designed to be self-contained with its own position and saturation sliders (lines 392-488 in BrainViewer.js). The issue was that Plots.js was constraining its height and also had a redundant external slider that wasn't connected to anything. The fix keeps BrainViewer as a complete, self-contained component and removes the redundant external controls.
+
