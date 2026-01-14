@@ -45,13 +45,17 @@ function Info({ info, isDark }) {
               color: 'var(--accent-accepted)',
             }}
           />
-          <span style={{
-            fontSize: '14px',
-            fontWeight: 500,
-            color: 'var(--text-primary)',
-            fontFamily: 'monospace',
-          }}>
-            {info[1]}
+          <span
+            title={info[1]}
+            style={{
+              fontSize: '14px',
+              fontWeight: 500,
+              color: 'var(--text-primary)',
+              fontFamily: 'monospace',
+              cursor: 'help',
+            }}
+          >
+            {info[1]?.split(/[/\\]/).filter(Boolean).pop() || info[1]}
           </span>
         </div>
       </div>

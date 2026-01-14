@@ -207,7 +207,7 @@ function App() {
     <ThemeContext.Provider value={{ theme, toggleTheme, isDark }}>
       <HelmetProvider>
         <Helmet>
-          <title>{info[1] || "Rica - ICA Component Viewer"}</title>
+          <title>{info[1]?.split(/[/\\]/).filter(Boolean).pop() || "Rica - ICA Component Viewer"}</title>
         </Helmet>
         <div className={`h-full min-h-full overflow-hidden text-center ${isTransitioning ? 'theme-transition' : ''}`}>
           {showIntroPopup && (
