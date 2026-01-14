@@ -37,6 +37,67 @@ function formatClassification(value) {
   return { text, isAccept, isReject };
 }
 
+// Reusable component list item with keyboard accessibility
+function ComponentListItem({ id, path, isSelected, colors, onClick, innerRef }) {
+  const finalClass = path.nodes[path.nodes.length - 1]?.classification || path.initial;
+  const formatted = formatClassification(finalClass);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick(id, e);
+    }
+  };
+
+  return (
+    <div
+      ref={innerRef}
+      role="button"
+      tabIndex={0}
+      onClick={(e) => onClick(id, e)}
+      onKeyDown={handleKeyDown}
+      style={{
+        padding: "10px",
+        backgroundColor: isSelected ? colors.bgHover : colors.bg,
+        border: `2px solid ${isSelected ? colors.selected : colors.border}`,
+        borderRadius: "6px",
+        cursor: "pointer",
+        transition: "all 0.15s ease",
+      }}
+      onMouseEnter={(e) => {
+        if (!isSelected) {
+          e.currentTarget.style.backgroundColor = colors.bgHover;
+        }
+        e.currentTarget.style.borderColor = colors.borderHover;
+      }}
+      onMouseLeave={(e) => {
+        if (!isSelected) {
+          e.currentTarget.style.backgroundColor = colors.bg;
+          e.currentTarget.style.borderColor = colors.border;
+        }
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: "13px", fontWeight: "600", color: colors.text }}>
+          {id.replace("_", " ")}
+        </span>
+        <span
+          style={{
+            fontSize: "11px",
+            padding: "2px 8px",
+            backgroundColor: formatted.isAccept ? colors.accepted : formatted.isReject ? colors.rejected : colors.textSecondary,
+            color: "#fff",
+            borderRadius: "4px",
+            fontWeight: "600",
+          }}
+        >
+          {formatted.text}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // Hook to measure container width with better initialization
 function useContainerWidth(ref, isActive) {
   // Calculate initial width based on viewport: right column is 50% of screen width minus padding
@@ -296,7 +357,15 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
             <div key={index} style={{ display: "flex", flexDirection: "column" }}>
               {/* Node Card */}
               <div
+                role="button"
+                tabIndex={0}
                 onClick={(e) => handleNodeClick(node, e)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleNodeClick(node, e);
+                  }
+                }}
                 style={{
                   padding: shouldDim ? "8px 16px" : "16px",
                   backgroundColor: isSelected ? colors.bgHover : colors.bgElevated,
@@ -489,57 +558,17 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
             // Show components affected by selected node
             affectedComponents.length > 0 ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {affectedComponents.map(({ id, path }) => {
-                  const finalClass = path.nodes[path.nodes.length - 1]?.classification || path.initial;
-                  const isAccepted = finalClass === "accepted";
-                  const isRejected = finalClass === "rejected";
-
-                  return (
-                    <div
-                      key={id}
-                      ref={selectedComponent === id ? selectedComponentRef : null}
-                      onClick={(e) => handleComponentClick(id, e)}
-                      style={{
-                        padding: "10px",
-                        backgroundColor: selectedComponent === id ? colors.bgHover : colors.bg,
-                        border: `2px solid ${selectedComponent === id ? colors.selected : colors.border}`,
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        transition: "all 0.15s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (selectedComponent !== id) {
-                          e.currentTarget.style.backgroundColor = colors.bgHover;
-                        }
-                        e.currentTarget.style.borderColor = colors.borderHover;
-                      }}
-                      onMouseLeave={(e) => {
-                        if (selectedComponent !== id) {
-                          e.currentTarget.style.backgroundColor = colors.bg;
-                          e.currentTarget.style.borderColor = colors.border;
-                        }
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: "13px", fontWeight: "600", color: colors.text }}>
-                          {id.replace("_", " ")}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: "11px",
-                            padding: "2px 8px",
-                            backgroundColor: isAccepted ? colors.accepted : isRejected ? colors.rejected : colors.textSecondary,
-                            color: "#fff",
-                            borderRadius: "4px",
-                            fontWeight: "600",
-                          }}
-                        >
-                          {finalClass}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                {affectedComponents.map(({ id, path }) => (
+                  <ComponentListItem
+                    key={id}
+                    id={id}
+                    path={path}
+                    isSelected={selectedComponent === id}
+                    colors={colors}
+                    onClick={handleComponentClick}
+                    innerRef={selectedComponent === id ? selectedComponentRef : null}
+                  />
+                ))}
               </div>
             ) : (
               <p style={{ color: colors.textSecondary, fontSize: "13px", textAlign: "center", padding: "24px" }}>
@@ -549,57 +578,17 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
           ) : (
             // Show all components
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {Object.entries(componentPaths).map(([id, path]) => {
-                const finalClass = path.nodes[path.nodes.length - 1]?.classification || path.initial;
-                const isAccepted = finalClass === "accepted";
-                const isRejected = finalClass === "rejected";
-
-                return (
-                  <div
-                    key={id}
-                    ref={selectedComponent === id ? selectedComponentRef : null}
-                    onClick={(e) => handleComponentClick(id, e)}
-                    style={{
-                      padding: "10px",
-                      backgroundColor: selectedComponent === id ? colors.bgHover : colors.bg,
-                      border: `2px solid ${selectedComponent === id ? colors.selected : colors.border}`,
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                      transition: "all 0.15s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (selectedComponent !== id) {
-                        e.currentTarget.style.backgroundColor = colors.bgHover;
-                      }
-                      e.currentTarget.style.borderColor = colors.borderHover;
-                    }}
-                    onMouseLeave={(e) => {
-                      if (selectedComponent !== id) {
-                        e.currentTarget.style.backgroundColor = colors.bg;
-                        e.currentTarget.style.borderColor = colors.border;
-                      }
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: "13px", fontWeight: "600", color: colors.text }}>
-                        {id.replace("_", " ")}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          padding: "2px 8px",
-                          backgroundColor: isAccepted ? colors.accepted : isRejected ? colors.rejected : colors.textSecondary,
-                          color: "#fff",
-                          borderRadius: "4px",
-                          fontWeight: "600",
-                        }}
-                      >
-                        {finalClass}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+              {Object.entries(componentPaths).map(([id, path]) => (
+                <ComponentListItem
+                  key={id}
+                  id={id}
+                  path={path}
+                  isSelected={selectedComponent === id}
+                  colors={colors}
+                  onClick={handleComponentClick}
+                  innerRef={selectedComponent === id ? selectedComponentRef : null}
+                />
+              ))}
             </div>
           )}
         </div>
