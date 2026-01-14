@@ -778,11 +778,13 @@
         "Verify path shows initial state left-aligned at root level",
         "Verify subsequent classification changes are left-aligned but indented (20px)",
         "Verify nodes that affected the selected component are highlighted",
-        "Verify component visualization fills the full width of right column",
+        "Verify component visualization fills the full width of right column and scales responsively on larger screens",
         "Verify brain viewer is not cropped and both position and saturation sliders are visible",
-        "Verify position and saturation sliders have matching styling and width"
+        "Verify position and saturation sliders have matching styling and width",
+        "Verify time series and brain stat map containers take the whole width of the visualization card",
+        "Verify visualization card height scales appropriately on larger screens (27\" monitors)"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

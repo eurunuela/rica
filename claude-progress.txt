@@ -2393,3 +2393,30 @@ The position and saturation sliders are now vertically aligned and styled consis
 ### Description
 Selected components in the component list now have enhanced visual feedback with a background color highlight (bgHover) and a thicker blue border (2px). When a component is selected, the view automatically scrolls smoothly to ensure the component remains visible within the scrollable list, improving navigation and user experience.
 
+
+## Session - Responsive Visualization Sizing for Large Screens (2026-01-13)
+
+### Goals
+- Make time series and brain stat map visualizations responsive to screen size
+- Ensure visualizations take full width of their parent container on larger screens (27" monitors)
+- Scale visualization card height appropriately for different screen sizes
+
+### Changes Made
+1. **src/Tree/DecisionTree.js** - Added useContainerWidth custom hook to measure container width dynamically (lines 7-35)
+2. **src/Tree/DecisionTree.js** - Added visualizationContainerRef to DecisionTree component (line 47)
+3. **src/Tree/DecisionTree.js** - Used useContainerWidth hook to measure visualization container width (line 50)
+4. **src/Tree/DecisionTree.js** - Added ref to visualization container (line 616)
+5. **src/Tree/DecisionTree.js** - Added minHeight: "400px" and height: "auto" to visualization card for responsive height (lines 626-627)
+6. **src/Tree/DecisionTree.js** - Changed TimeSeries width from fixed 880px to dynamic containerWidth (line 638)
+7. **src/Tree/DecisionTree.js** - Changed TimeSeries height to responsive calculation: Math.max(150, Math.min(200, containerWidth * 0.15)) (line 639)
+8. **src/Tree/DecisionTree.js** - Changed BrainViewer width from fixed 880px to dynamic containerWidth (line 653)
+9. **src/Tree/DecisionTree.js** - Changed BrainViewer height to responsive calculation: Math.max(500, Math.min(700, containerWidth * 0.6)) (line 654)
+
+### Technical Details
+The useContainerWidth hook uses ResizeObserver to dynamically measure the container width and update the visualizations in real-time when the window is resized. The hook accounts for the container's padding (16px on each side, total 32px) to calculate the available width accurately.
+
+TimeSeries height scales at 15% of container width (min 150px, max 200px) while BrainViewer height scales at 60% of container width (min 500px, max 700px), maintaining appropriate aspect ratios across different screen sizes.
+
+### Description
+The time series and brain stat map visualizations in the Tree tab now dynamically scale to fill the full width of their parent container, providing a better viewing experience on larger monitors (27" and above). On laptop screens, the visualizations maintain their minimum sizes, while on larger screens they expand proportionally to use the available space effectively. The visualization card height also scales automatically based on content, ensuring nothing is cropped and the sliders remain fully visible.
+

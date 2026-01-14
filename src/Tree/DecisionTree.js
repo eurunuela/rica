@@ -4,6 +4,96 @@ import TimeSeries from "../Plots/TimeSeries";
 import BrainViewer from "../Plots/BrainViewer";
 import { formatComponentName } from "../Plots/PlotUtils";
 
+// Format classification names and determine colors
+function formatClassification(value) {
+  if (!value) return { text: value, isAccept: false, isReject: false };
+
+  const lowerValue = value.toLowerCase();
+
+  // Check if it's an accept or reject type
+  const isAccept = lowerValue.includes("accept");
+  const isReject = lowerValue.includes("reject");
+
+  // Format the text: split camelCase/concatenated words and capitalize
+  let text = value;
+  if (lowerValue === "provisionalaccept") {
+    text = "Provisional Accept";
+  } else if (lowerValue === "provisionalreject") {
+    text = "Provisional Reject";
+  } else if (lowerValue === "accepted") {
+    text = "Accepted";
+  } else if (lowerValue === "rejected") {
+    text = "Rejected";
+  } else if (lowerValue === "unclassified") {
+    text = "Unclassified";
+  } else if (lowerValue === "nochange") {
+    text = "No Change";
+  } else {
+    // Generic formatting: insert space before capitals and capitalize first letter
+    text = value.replace(/([a-z])([A-Z])/g, '$1 $2')
+                .replace(/^./, str => str.toUpperCase());
+  }
+
+  return { text, isAccept, isReject };
+}
+
+// Hook to measure container width with better initialization
+function useContainerWidth(ref, isActive) {
+  // Calculate initial width based on viewport: right column is 50% of screen width minus padding
+  const getDefaultWidth = () => {
+    if (typeof window !== 'undefined') {
+      // Right column takes flex: 1 (50% of content area), minus padding (24px * 2 + 16px * 2)
+      return Math.floor(window.innerWidth * 0.5) - 80;
+    }
+    return 800;
+  };
+
+  const [width, setWidth] = useState(getDefaultWidth);
+
+  useEffect(() => {
+    if (!isActive) return;
+
+    const updateWidth = () => {
+      if (ref.current) {
+        // Get the actual width of the container, accounting for padding
+        const containerWidth = ref.current.offsetWidth - 32; // Subtract padding (16px * 2)
+        if (containerWidth > 200) { // Only update if we get a valid measurement
+          setWidth(containerWidth);
+        }
+      } else {
+        // Fallback to viewport-based calculation
+        setWidth(getDefaultWidth());
+      }
+    };
+
+    // Initial measurement with delays to ensure DOM is ready
+    updateWidth();
+    const timeoutId1 = setTimeout(updateWidth, 100);
+    const timeoutId2 = setTimeout(updateWidth, 300);
+
+    // Update on resize
+    let resizeObserver;
+    if (ref.current) {
+      resizeObserver = new ResizeObserver(updateWidth);
+      resizeObserver.observe(ref.current);
+    }
+
+    // Also listen to window resize
+    window.addEventListener('resize', updateWidth);
+
+    return () => {
+      clearTimeout(timeoutId1);
+      clearTimeout(timeoutId2);
+      window.removeEventListener('resize', updateWidth);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
+  }, [ref, isActive]);
+
+  return width;
+}
+
 /**
  * Decision Tree Visualization Component
  *
@@ -14,6 +104,13 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
   const [selectedNode, setSelectedNode] = useState(null);
   const [selectedComponent, setSelectedComponent] = useState(null);
   const selectedComponentRef = useRef(null);
+  const visualizationContainerRef = useRef(null);
+
+  // Check if we have interactive views available
+  const hasInteractiveViews = !!(mixingMatrix?.data && niftiBuffer && maskBuffer);
+
+  // Measure container width for responsive visualizations (only when component is selected and has views)
+  const containerWidth = useContainerWidth(visualizationContainerRef, !!(selectedComponent && hasInteractiveViews));
 
   // Theme colors
   const colors = useMemo(
@@ -125,9 +222,6 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
     const finalClass = path.nodes[path.nodes.length - 1]?.classification || path.initial;
     return finalClass === "accepted" ? "accepted" : "rejected";
   }, [selectedComponent, componentPaths]);
-
-  // Check if we have interactive views available
-  const hasInteractiveViews = !!(mixingMatrix?.data && niftiBuffer && maskBuffer);
 
   // Theme-aware colors for visualizations
   const getColors = useCallback((isDark) => ({
@@ -284,16 +378,26 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
                     </div>
                   )}
                   <div style={{ display: "flex", gap: "16px", marginTop: "4px" }}>
-                    {node.ifTrue !== "nochange" && (
-                      <span>
-                        If true → <strong>{node.ifTrue}</strong>
-                      </span>
-                    )}
-                    {node.ifFalse !== "nochange" && (
-                      <span>
-                        If false → <strong>{node.ifFalse}</strong>
-                      </span>
-                    )}
+                    {node.ifTrue !== "nochange" && (() => {
+                      const formatted = formatClassification(node.ifTrue);
+                      return (
+                        <span>
+                          If true → <strong style={{
+                            color: formatted.isAccept ? colors.accepted : formatted.isReject ? colors.rejected : "inherit"
+                          }}>{formatted.text}</strong>
+                        </span>
+                      );
+                    })()}
+                    {node.ifFalse !== "nochange" && (() => {
+                      const formatted = formatClassification(node.ifFalse);
+                      return (
+                        <span>
+                          If false → <strong style={{
+                            color: formatted.isAccept ? colors.accepted : formatted.isReject ? colors.rejected : "inherit"
+                          }}>{formatted.text}</strong>
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
@@ -346,25 +450,26 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
           padding: "0 24px",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
+          justifyContent: "flex-start",
           position: "sticky",
           top: "0px",
           alignSelf: "flex-start",
           maxHeight: "calc(100vh - 120px)",
           gap: "16px",
+          overflow: "auto",
         }}
       >
         {/* Component List */}
         <div
           style={{
-            minHeight: selectedComponent ? "150px" : "auto",
-            maxHeight: selectedComponent ? "200px" : "none",
+            minHeight: selectedComponent ? "180px" : "auto",
+            maxHeight: selectedComponent ? "280px" : "none",
             overflow: "auto",
             backgroundColor: colors.bgElevated,
             border: `1px solid ${colors.border}`,
             borderRadius: "8px",
-            padding: "12px",
-            width: "400px",
+            padding: "16px",
+            width: "min(500px, 100%)",
             alignSelf: "center",
           }}
         >
@@ -509,8 +614,9 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
               borderRadius: "8px",
               display: "flex",
               flexDirection: "column",
-              width: "400px",
+              width: "min(500px, 100%)",
               alignSelf: "center",
+              minHeight: "120px",
             }}
           >
             <h3
@@ -529,20 +635,25 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
             </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-start" }}>
               {/* Initial state */}
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px" }}>
-                <span
-                  style={{
-                    padding: "4px 10px",
-                    backgroundColor: colors.textSecondary,
-                    color: "#fff",
-                    borderRadius: "4px",
-                    fontWeight: "600",
-                  }}
-                >
-                  {componentPaths[selectedComponent].initial}
-                </span>
-                <span style={{ color: colors.textSecondary }}>Initial</span>
-              </div>
+              {(() => {
+                const initialFormatted = formatClassification(componentPaths[selectedComponent].initial);
+                return (
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px" }}>
+                    <span
+                      style={{
+                        padding: "4px 10px",
+                        backgroundColor: initialFormatted.isAccept ? colors.accepted : initialFormatted.isReject ? colors.rejected : colors.textSecondary,
+                        color: "#fff",
+                        borderRadius: "4px",
+                        fontWeight: "600",
+                      }}
+                    >
+                      {initialFormatted.text}
+                    </span>
+                    <span style={{ color: colors.textSecondary }}>Initial</span>
+                  </div>
+                );
+              })()}
 
               {/* Changes at each node */}
               {componentPaths[selectedComponent].nodes.map((node, idx) => {
@@ -551,8 +662,7 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
 
                 if (!changed) return null;
 
-                const isAccepted = node.classification === "accepted";
-                const isRejected = node.classification === "rejected";
+                const formatted = formatClassification(node.classification);
 
                 return (
                   <div key={idx} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", marginLeft: "20px" }}>
@@ -560,13 +670,13 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
                     <span
                       style={{
                         padding: "4px 10px",
-                        backgroundColor: isAccepted ? colors.accepted : isRejected ? colors.rejected : colors.textSecondary,
+                        backgroundColor: formatted.isAccept ? colors.accepted : formatted.isReject ? colors.rejected : colors.textSecondary,
                         color: "#fff",
                         borderRadius: "4px",
                         fontWeight: "600",
                       }}
                     >
-                      {node.classification}
+                      {formatted.text}
                     </span>
                     <span style={{ color: colors.textSecondary }}>Node {node.nodeIndex}</span>
                   </div>
@@ -579,27 +689,31 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
         {/* Component Visualizations */}
         {selectedComponent && hasInteractiveViews && selectedComponentIndex !== null && currentTimeSeries && (
           <div
+            ref={visualizationContainerRef}
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: "12px",
+              gap: "16px",
               backgroundColor: colors.bgElevated,
               border: `1px solid ${colors.border}`,
               borderRadius: "8px",
               padding: "16px",
               width: "100%",
+              height: "calc(100vh - 500px)", // Fill available height minus other cards
+              minHeight: "500px",
+              maxHeight: "900px",
             }}
           >
             <h4 style={{ fontSize: "13px", fontWeight: "600", color: colors.text, marginBottom: "4px" }}>
               Component Visualization
             </h4>
 
-            {/* Time series */}
-            <div style={{ width: "100%" }}>
+            {/* Time series - full width */}
+            <div style={{ width: "100%", minWidth: 0, flexShrink: 0 }}>
               <TimeSeries
                 data={currentTimeSeries}
-                width={880}
-                height={120}
+                width={containerWidth}
+                height={180}
                 title="Time Series"
                 componentLabel={currentComponentLabel}
                 lineColor={selectedClassification === 'accepted' ? getColors(isDark).acceptedHover : getColors(isDark).rejectedHover}
@@ -607,14 +721,14 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
               />
             </div>
 
-            {/* Brain stat map viewer */}
-            <div style={{ width: "100%" }}>
+            {/* Brain stat map viewer - full width, takes remaining height */}
+            <div style={{ width: "100%", minWidth: 0, flex: 1, minHeight: "300px" }}>
               <BrainViewer
                 niftiBuffer={niftiBuffer}
                 maskBuffer={maskBuffer}
                 componentIndex={selectedComponentIndex}
-                width={880}
-                height={510}
+                width={containerWidth}
+                height={Math.max(400, Math.min(650, window.innerHeight - 700))}
                 componentLabel={currentComponentLabel}
                 isDark={isDark}
               />
