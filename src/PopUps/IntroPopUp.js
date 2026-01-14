@@ -150,7 +150,10 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           // QC NIfTI files
           f.includes("T2starmap.nii") ||
           f.includes("S0map.nii") ||
-          f.includes("rmse_statmap.nii")
+          f.includes("rmse_statmap.nii") ||
+          // Decision tree files
+          f.includes("decision_tree.json") ||
+          f.includes("status_table.tsv")
       );
 
       setLoadingProgress({ current: 0, total: relevantFiles.length });
@@ -172,6 +175,9 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       let externalRegressorsFigure = null;
       // Manual classification data
       let manualClassificationData = null;
+      // Decision tree data
+      let decisionTreeData = null;
+      let statusTableData = null;
 
       // Process files via HTTP fetch
       for (const filepath of relevantFiles) {
@@ -296,6 +302,30 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             console.log("[Rica] Loaded manual_classification.tsv with", manualClassificationData?.length || 0, "entries");
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
+
+          // Decision tree JSON
+          if (filename.includes("decision_tree.json")) {
+            const response = await fetch(`/${filepath}`);
+            const text = await response.text();
+            decisionTreeData = JSON.parse(text);
+            console.log("[Rica] Loaded decision tree with", decisionTreeData?.nodes?.length || 0, "nodes");
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
+
+          // Status table TSV
+          if (filename.includes("status_table.tsv")) {
+            const response = await fetch(`/${filepath}`);
+            const text = await response.text();
+            const parsed = Papa.parse(text, {
+              header: true,
+              skipEmptyLines: true,
+              dynamicTyping: false, // Keep as strings for classification states
+              delimiter: "\t",
+            });
+            statusTableData = parsed.data;
+            console.log("[Rica] Loaded status table with", statusTableData?.length || 0, "components");
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
         } catch (error) {
           console.error(`Error fetching file ${filepath}:`, error);
         }
@@ -325,6 +355,9 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         qcNiftiBuffers,
         externalRegressorsFigure,
         hasManualClassifications: manualClassificationData && manualClassificationData.length > 0,
+        // Decision tree data
+        decisionTreeData,
+        statusTableData,
       });
     },
     [onDataLoad, onLoadingStart]
@@ -376,7 +409,10 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           // QC NIfTI files
           f.name.includes("T2starmap.nii") ||
           f.name.includes("S0map.nii") ||
-          f.name.includes("rmse_statmap.nii")
+          f.name.includes("rmse_statmap.nii") ||
+          // Decision tree files
+          f.name.includes("decision_tree.json") ||
+          f.name.includes("status_table.tsv")
       ).length;
 
       setLoadingProgress({ current: 0, total: totalFiles });
@@ -398,6 +434,9 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       let externalRegressorsFigure = null;
       // Manual classification data
       let manualClassificationData = null;
+      // Decision tree data
+      let decisionTreeData = null;
+      let statusTableData = null;
 
       // Process all files in parallel using Promise.all
       const filePromises = files.map(async (file) => {
@@ -509,6 +548,28 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             console.log("[Rica] Loaded manual_classification.tsv with", manualClassificationData?.length || 0, "entries");
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
+
+          // Decision tree JSON
+          if (filename.includes("decision_tree.json")) {
+            const text = await readFileAsText(file);
+            decisionTreeData = JSON.parse(text);
+            console.log("[Rica] Loaded decision tree with", decisionTreeData?.nodes?.length || 0, "nodes");
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
+
+          // Status table TSV
+          if (filename.includes("status_table.tsv")) {
+            const text = await readFileAsText(file);
+            const parsed = Papa.parse(text, {
+              header: true,
+              skipEmptyLines: true,
+              dynamicTyping: false, // Keep as strings for classification states
+              delimiter: "\t",
+            });
+            statusTableData = parsed.data;
+            console.log("[Rica] Loaded status table with", statusTableData?.length || 0, "components");
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
         } catch (error) {
           console.error(`Error reading file ${filename}:`, error);
         }
@@ -542,6 +603,9 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         qcNiftiBuffers,
         externalRegressorsFigure,
         hasManualClassifications: manualClassificationData && manualClassificationData.length > 0,
+        // Decision tree data
+        decisionTreeData,
+        statusTableData,
       });
     },
     [onDataLoad, onLoadingStart]

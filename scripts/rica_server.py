@@ -37,6 +37,9 @@ RICA_FILE_PATTERNS = [
     "T2starmap.nii",
     "S0map.nii",
     "rmse_statmap.nii",
+    # Decision tree files
+    "decision_tree.json",
+    "status_table.tsv",
 ]
 
 # Ensure proper MIME types

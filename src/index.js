@@ -26,6 +26,7 @@ import {
   faMoon,
   faHeartPulse,
   faBell,
+  faProjectDiagram,
 } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
@@ -34,8 +35,9 @@ import Plots from "./Plots/Plots";
 import Carpets from "./Carpets/Carpets";
 import Info from "./Info/Info";
 import Diagnostics from "./Diagnostics/Diagnostics";
+import DecisionTreeTab from "./Tree/DecisionTreeTab";
 
-library.add(faInfoCircle, faLayerGroup, faChartPie, faPlus, faQuestion, faSun, faMoon, faHeartPulse, faBell);
+library.add(faInfoCircle, faLayerGroup, faChartPie, faPlus, faQuestion, faSun, faMoon, faHeartPulse, faBell, faProjectDiagram);
 
 // Theme context
 const ThemeContext = React.createContext();
@@ -65,6 +67,9 @@ function App() {
   const [crossComponentMetrics, setCrossComponentMetrics] = useState(null);
   const [qcNiftiBuffers, setQcNiftiBuffers] = useState({});
   const [externalRegressorsFigure, setExternalRegressorsFigure] = useState(null);
+  // Decision tree data
+  const [decisionTreeData, setDecisionTreeData] = useState(null);
+  const [statusTableData, setStatusTableData] = useState(null);
   // Theme state
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('rica-theme');
@@ -176,6 +181,9 @@ function App() {
       setCrossComponentMetrics(data.crossComponentMetrics);
       setQcNiftiBuffers(data.qcNiftiBuffers || {});
       setExternalRegressorsFigure(data.externalRegressorsFigure);
+      // Decision tree data
+      setDecisionTreeData(data.decisionTreeData);
+      setStatusTableData(data.statusTableData);
       setIsLoading(false);
       toggleIntroPopup();
       
@@ -230,9 +238,9 @@ function App() {
               {/* Minimal Modern Navbar */}
               <nav
                 style={{
-                  display: "flex",
+                  display: "grid",
+                  gridTemplateColumns: "1fr auto 1fr",
                   alignItems: "center",
-                  justifyContent: "space-between",
                   padding: "12px 24px",
                   backgroundColor: "var(--bg-primary)",
                   borderBottom: "1px solid var(--border-default)",
@@ -299,10 +307,19 @@ function App() {
                     />
                     <span>QC</span>
                   </AnimatedTab>
+                  {decisionTreeData && statusTableData && (
+                    <AnimatedTab index={4} isDark={isDark}>
+                      <FontAwesomeIcon
+                        icon={["fas", "project-diagram"]}
+                        style={{ marginRight: "6px", fontSize: "13px", opacity: 0.7 }}
+                      />
+                      <span>Tree</span>
+                    </AnimatedTab>
+                  )}
                 </TabList>
 
                 {/* Right: Action Buttons */}
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", justifyContent: "flex-end" }}>
                   {/* Theme toggle */}
                   <button
                     onClick={toggleTheme}
@@ -450,6 +467,19 @@ function App() {
                     isDark={isDark}
                   />
                 </TabPanel>
+                {decisionTreeData && statusTableData && (
+                  <TabPanel index={4}>
+                    <DecisionTreeTab
+                      decisionTreeData={decisionTreeData}
+                      statusTableData={statusTableData}
+                      componentData={componentData}
+                      mixingMatrix={mixingMatrix}
+                      niftiBuffer={niftiBuffer}
+                      maskBuffer={maskBuffer}
+                      isDark={isDark}
+                    />
+                  </TabPanel>
+                )}
               </TabPanels>
             </AnimatedTabs>
           )}
