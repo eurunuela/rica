@@ -1,4 +1,4 @@
-name: Deploy Documentation
+name: Documentation
 
 on:
   push:
@@ -7,13 +7,18 @@ on:
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,8 +29,87 @@ jobs:
           python-version: '3.x'
 
       - name: Install dependencies
-        run: |
-          pip install mkdocs-material
+        run: pip install mkdocs-material
+
+      - name: Build documentation
+        run: mkdocs build --strict
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-preview
+          path: site/
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install mkdocs-material
 
       - name: Deploy to GitHub Pages
         run: mkdocs gh-deploy --force
+
+  preview:
+    if: github.event_name == 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docs-preview
+          path: site/
+
+      - name: Deploy PR preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: site/
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const previewUrl = `https://me-ica.github.io/rica/pr-preview/pr-${prNumber}/`;
+            const body = `## 📚 Documentation Preview\n\nPreview this PR's documentation at:\n**${previewUrl}**\n\n_This preview will be automatically removed when the PR is closed._`;
+
+            // Check if comment already exists
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+
+            const existingComment = comments.data.find(c =>
+              c.user.login === 'github-actions[bot]' &&
+              c.body.includes('Documentation Preview')
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+            }
