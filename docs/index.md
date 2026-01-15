@@ -27,6 +27,9 @@ Rica provides an intuitive interface to visualize multi-echo fMRI denoising resu
 | Quality Control | T2*, S0, and RMSE diagnostic maps |
 | Dark/Light Themes | Comfortable viewing in any environment |
 
+![Rica ICA Tab](images/ica-tab.png)
+*The ICA tab showing component visualization with scatter plots, brain viewer, and time series*
+
 ## Quick Start
 
 The fastest way to use Rica:
