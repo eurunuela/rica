@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFolder } from "@fortawesome/free-solid-svg-icons";
+import { getFolderName } from "../utils/pathUtils";
 
 function Info({ info, isDark }) {
   const [showTooltip, setShowTooltip] = useState(false);
@@ -58,7 +59,7 @@ function Info({ info, isDark }) {
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
           >
-            {info[1]?.split(/[/\\]/).filter(Boolean).pop() || info[1]}
+            {getFolderName(info[1])}
             {showTooltip && (
               <span
                 style={{
