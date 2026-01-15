@@ -14,8 +14,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   build:
@@ -39,14 +40,10 @@ jobs:
         with:
           path: site/
 
-  # Deploy to GitHub Pages on push to master
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: build
     runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -54,56 +51,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-  # Comment on PR with artifact download link
-  comment:
-    if: github.event_name == 'pull_request'
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Comment on PR
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            const runId = context.runId;
-            const artifactUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
-
-            const body = `## 📚 Documentation Preview
-
-            The documentation has been built successfully!
-
-            **To preview:**
-            1. Go to the [workflow run](${artifactUrl})
-            2. Download the \`github-pages\` artifact at the bottom
-            3. Unzip and open \`index.html\` in your browser
-
-            _Or run locally: \`pip install mkdocs-material && mkdocs serve\`_`;
-
-            // Check if comment already exists
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber
-            });
-
-            const existingComment = comments.data.find(c =>
-              c.user.login === 'github-actions[bot]' &&
-              c.body.includes('Documentation Preview')
-            );
-
-            if (existingComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body: body
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: body
-              });
-            }
