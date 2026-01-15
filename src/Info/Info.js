@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFolder } from "@fortawesome/free-solid-svg-icons";
+import { getFolderName } from "../utils/pathUtils";
 
 function Info({ info, isDark }) {
+  const [showTooltip, setShowTooltip] = useState(false);
   if (!info?.length) {
     return (
       <div style={{
@@ -45,13 +47,40 @@ function Info({ info, isDark }) {
               color: 'var(--accent-accepted)',
             }}
           />
-          <span style={{
-            fontSize: '14px',
-            fontWeight: 500,
-            color: 'var(--text-primary)',
-            fontFamily: 'monospace',
-          }}>
-            {info[1]}
+          <span
+            style={{
+              position: 'relative',
+              fontSize: '14px',
+              fontWeight: 500,
+              color: 'var(--text-primary)',
+              fontFamily: 'monospace',
+              cursor: 'help',
+            }}
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+          >
+            {getFolderName(info[1])}
+            {showTooltip && (
+              <span
+                style={{
+                  position: 'absolute',
+                  bottom: '100%',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  marginBottom: '8px',
+                  padding: '8px 12px',
+                  backgroundColor: 'var(--bg-primary)',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  zIndex: 1000,
+                }}
+              >
+                {info[1]}
+              </span>
+            )}
           </span>
         </div>
       </div>
