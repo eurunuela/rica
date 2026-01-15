@@ -1,8 +1,11 @@
 # Rica
 
 [![DOI](https://zenodo.org/badge/391155862.svg)](https://zenodo.org/badge/latestdoi/391155862)
+[![Documentation](https://img.shields.io/badge/docs-online-blue)](https://me-ica.github.io/rica/)
 
 **Rica** (Reports for ICA) is an interactive visualization tool for reviewing and classifying ICA components from [tedana](https://github.com/ME-ICA/tedana) multi-echo fMRI analysis.
+
+**[View Documentation](https://me-ica.github.io/rica/)** | **[Launch Rica Online](https://rica-fmri.netlify.app)**
 
 **Pronunciation:** [ˈrika]. [Hear it here](https://easypronunciation.com/en/spanish/word/rica).
 
@@ -28,6 +31,8 @@
 - **Export** - Save modified classifications as TSV
 
 ## How to Use
+
+For comprehensive guides, see the **[Documentation](https://me-ica.github.io/rica/)**.
 
 For a video tutorial, see [this walkthrough](https://www.loom.com/share/ad37cf6f3c2d41e48721f62168a8284e).
 
