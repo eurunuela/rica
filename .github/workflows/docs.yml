@@ -34,57 +34,51 @@ jobs:
       - name: Build documentation
         run: mkdocs build --strict
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: docs-preview
           path: site/
 
+  # Deploy to GitHub Pages on push to master
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
-      - name: Install dependencies
-        run: pip install mkdocs-material
-
       - name: Deploy to GitHub Pages
-        run: mkdocs gh-deploy --force
+        id: deployment
+        uses: actions/deploy-pages@v4
 
-  preview:
+  # Comment on PR with artifact download link
+  comment:
     if: github.event_name == 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: docs-preview
-          path: site/
-
-      - name: Deploy PR preview
-        uses: rossjrw/pr-preview-action@v1
-        with:
-          source-dir: site/
-          preview-branch: gh-pages
-          umbrella-dir: pr-preview
-
       - name: Comment on PR
         uses: actions/github-script@v7
         with:
           script: |
             const prNumber = context.payload.pull_request.number;
-            const previewUrl = `https://me-ica.github.io/rica/pr-preview/pr-${prNumber}/`;
-            const body = `## 📚 Documentation Preview\n\nPreview this PR's documentation at:\n**${previewUrl}**\n\n_This preview will be automatically removed when the PR is closed._`;
+            const runId = context.runId;
+            const artifactUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
+
+            const body = `## 📚 Documentation Preview
+
+            The documentation has been built successfully!
+
+            **To preview:**
+            1. Go to the [workflow run](${artifactUrl})
+            2. Download the \`github-pages\` artifact at the bottom
+            3. Unzip and open \`index.html\` in your browser
+
+            _Or run locally: \`pip install mkdocs-material && mkdocs serve\`_`;
 
             // Check if comment already exists
             const comments = await github.rest.issues.listComments({
