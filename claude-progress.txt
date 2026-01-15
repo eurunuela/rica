@@ -2459,3 +2459,57 @@ The bug had multiple related causes:
 ### Technical Notes
 The BrainViewer component was designed to be self-contained with its own position and saturation sliders (lines 392-488 in BrainViewer.js). The issue was that Plots.js was constraining its height and also had a redundant external slider that wasn't connected to anything. The fix keeps BrainViewer as a complete, self-contained component and removes the redundant external controls.
 
+
+
+## Session - Address PR #96 Review Comments (2026-01-14)
+
+### Goals
+- Address Copilot review comments on PR #96 (Show folder name instead of full path in Info tab)
+- Fix code duplication by extracting path parsing into utility function
+- Fix security issues in shell scripts (command injection vulnerabilities)
+- Remove unrelated changes that were accidentally included in the PR
+
+### Copilot Review Comments Addressed
+
+1. **Code Duplication** - Path parsing logic `info[1]?.split(/[/\\]/).filter(Boolean).pop() || info[1]` was duplicated in Info.js and index.js
+   - Created `src/utils/pathUtils.js` with `getFolderName()` utility function
+   - Updated both files to import and use the shared utility
+
+2. **Security Issue in test.sh** - Using `eval $CMD` with user-controlled input was unsafe
+   - Reverted to array-based approach with `npm test -- "${ARGS[@]}"`
+   - This prevents command injection if TEST_FILE contains malicious content
+
+3. **Security Issue in lint.sh** - Using `$CMD` string expansion was unsafe
+   - Reverted to array-based approach with `"${CMD[@]}"`
+   - This properly quotes arguments and prevents command injection
+
+4. **Unrelated Changes** - PR included changes not related to folder name display:
+   - Reverted `package.json` node version from `>=16.0.0 <20.0.0` back to `>=18.0.0`
+   - Removed `watch:css` script from package.json (unrelated to PR scope)
+   - Restored rica_server.py copy section in build.sh
+   - Restored tedana usage instructions at end of build.sh
+
+### Files Created
+- `src/utils/pathUtils.js` - New utility function for path parsing
+
+### Files Modified
+- `src/Info/Info.js` - Import and use getFolderName utility
+- `src/index.js` - Import and use getFolderName utility
+- `scripts/test.sh` - Reverted to safe array-based command building
+- `scripts/lint.sh` - Reverted to safe array-based command building
+- `package.json` - Reverted unrelated changes
+- `scripts/build.sh` - Restored removed sections
+
+### Features Updated
+- display_info_tab: passes=true (Info tab now shows folder name with full path on hover)
+
+### Technical Details
+```javascript
+// src/utils/pathUtils.js
+export function getFolderName(path) {
+  if (!path) return path;
+  return path.split(/[/\\]/).filter(Boolean).pop() || path;
+}
+```
+
+The utility handles both Unix (/) and Windows (\) path separators, returning just the folder name from a full path.
