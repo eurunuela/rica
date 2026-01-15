@@ -65,7 +65,7 @@ If you use Rica in your research, please cite:
 
 ```bibtex
 @software{rica,
-  author = {Urunuela, Eneko and DuPre, Elizabeth and Gomez, Daniel},
+  author = {Urunuela, Eneko},
   title = {Rica: Review of ICA Components Application},
   url = {https://github.com/ME-ICA/rica},
   version = {2.1.1}
