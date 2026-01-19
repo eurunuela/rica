@@ -129,6 +129,17 @@ if [ "$INLINE" = true ]; then
     fi
 fi
 
+# Copy Rica server script for local usage
+if [ -f "scripts/rica_server.py" ]; then
+    echo ""
+    echo "Copying Rica server script..."
+    cp scripts/rica_server.py build/rica_server.py
+    chmod +x build/rica_server.py
+    echo -e "${GREEN}rica_server.py copied to build/${NC}"
+fi
+
+# Note: favicon.ico is no longer needed as the logo is embedded as base64 in the app
+
 # Verify build integrity if requested
 if [ "$CHECK" = true ]; then
     echo ""
@@ -169,4 +180,11 @@ fi
 echo ""
 echo "To preview the build locally:"
 echo "  npx serve -s build"
+echo ""
+echo "To use with tedana output:"
+echo "  1. Copy these files to your tedana output folder:"
+echo "       - build/index.html (self-contained app with embedded logo)"
+echo "       - build/rica_server.py"
+echo "  2. Run: python rica_server.py"
+echo "  3. Data will load automatically in your browser"
 echo ""

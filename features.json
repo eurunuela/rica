@@ -26,9 +26,9 @@
         "Load a tedana folder",
         "Click on the 'Info' tab",
         "Verify report text content is displayed",
-        "Verify folder path is shown in header badge"
+        "Verify folder name is shown in header badge (hover for full path)"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "display_ica_scatter_plots",

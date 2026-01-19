@@ -1,6 +1,7 @@
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGithub } from "@fortawesome/free-brands-svg-icons";
+import { faBook } from "@fortawesome/free-solid-svg-icons";
 import { LOGO_DATA_URL } from "../constants/logo";
 import { VERSION_DISPLAY } from "../constants/version";
 
@@ -118,31 +119,58 @@ function AboutPopup({ closePopup, isDark }) {
             Questions or contributions welcome.
           </p>
 
-          <a
-            href="https://github.com/ME-ICA/rica"
-            target="_blank"
-            rel="noreferrer noopener"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              width: '100%',
-              height: '44px',
-              fontSize: '14px',
-              fontWeight: 500,
-              color: isDark ? '#0a0a0b' : '#ffffff',
-              backgroundColor: isDark ? '#fafafa' : '#111827',
-              borderRadius: '10px',
-              textDecoration: 'none',
-              transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
-            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-          >
-            <FontAwesomeIcon icon={faGithub} />
-            View on GitHub
-          </a>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <a
+              href="https://me-ica.github.io/rica/"
+              target="_blank"
+              rel="noreferrer noopener"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                width: '100%',
+                height: '44px',
+                fontSize: '14px',
+                fontWeight: 500,
+                color: isDark ? '#0a0a0b' : '#ffffff',
+                backgroundColor: isDark ? '#fafafa' : '#111827',
+                borderRadius: '10px',
+                textDecoration: 'none',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+            >
+              <FontAwesomeIcon icon={faBook} />
+              Documentation
+            </a>
+            <a
+              href="https://github.com/ME-ICA/rica"
+              target="_blank"
+              rel="noreferrer noopener"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                width: '100%',
+                height: '44px',
+                fontSize: '14px',
+                fontWeight: 500,
+                color: 'var(--text-secondary)',
+                backgroundColor: 'var(--bg-tertiary)',
+                borderRadius: '10px',
+                textDecoration: 'none',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+            >
+              <FontAwesomeIcon icon={faGithub} />
+              View on GitHub
+            </a>
+          </div>
         </div>
       </div>
     </div>

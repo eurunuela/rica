@@ -15,6 +15,7 @@ import { TabList, TabPanels, TabPanel } from "./TabComponents";
 import { AnimatedTab, AnimatedTabs } from "./TabFunctions";
 import { LOGO_DATA_URL } from "./constants/logo";
 import { VERSION } from "./constants/version";
+import { getFolderName } from "./utils/pathUtils";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faInfoCircle,
@@ -207,7 +208,7 @@ function App() {
     <ThemeContext.Provider value={{ theme, toggleTheme, isDark }}>
       <HelmetProvider>
         <Helmet>
-          <title>{info[1] || "Rica - ICA Component Viewer"}</title>
+          <title>{getFolderName(info[1]) || "Rica - ICA Component Viewer"}</title>
         </Helmet>
         <div className={`h-full min-h-full overflow-hidden text-center ${isTransitioning ? 'theme-transition' : ''}`}>
           {showIntroPopup && (
