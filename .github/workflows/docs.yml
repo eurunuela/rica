@@ -11,6 +11,8 @@ on:
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -84,7 +86,7 @@ jobs:
           path: screenshots/
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     environment:
