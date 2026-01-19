@@ -3,7 +3,7 @@
 ## Project Overview
 
 **Name**: rica (Reports for ICA)
-**Version**: 2.0.2
+**Version**: 2.1.1
 **Purpose**: React-based interactive visualization tool for multi-echo fMRI ICA component analysis from tedana/ME-ICA outputs.
 
 ### Main Libraries (v2.0.0)
@@ -2458,4 +2458,62 @@ The bug had multiple related causes:
 
 ### Technical Notes
 The BrainViewer component was designed to be self-contained with its own position and saturation sliders (lines 392-488 in BrainViewer.js). The issue was that Plots.js was constraining its height and also had a redundant external slider that wasn't connected to anything. The fix keeps BrainViewer as a complete, self-contained component and removes the redundant external controls.
+
+---
+
+## Release v2.1.0 (2026-01-14)
+
+### Release Notes
+Created GitHub release v2.1.0 with the following highlights:
+
+### New Features
+
+#### Interactive Decision Tree Visualization (Issue #91)
+A new **Tree** tab that provides an interactive visualization of tedana's decision tree classification process.
+
+**Features:**
+- Decision Tree Flow: View all nodes in tedana's sequential decision tree
+- Interactive Exploration: Click nodes to see affected components, click components to trace their classification path
+- Detailed Information: See conditions, true/false counts, and outcomes for each decision node
+- Color-coded Classifications: Provisional Accept/Reject and final classifications are clearly distinguished
+- Keyboard Accessible: Full keyboard navigation support (Tab, Enter, Space)
+- Responsive Design: Works well on both laptop screens and larger monitors (27"+)
+- Theme Support: Full light/dark mode compatibility
+
+**How to use:**
+1. Load a tedana output folder that contains `decision_tree.json` and `status_table.tsv`
+2. Navigate to the new "Tree" tab
+3. Click on any node to see which components were affected
+4. Click on a component to see its complete classification journey
+
+### Code Quality
+- Removed unused dependencies
+- Added keyboard accessibility throughout
+- Improved code organization with reusable components
+
+### Release URL
+https://github.com/ME-ICA/rica/releases/tag/v2.1.0
+
+---
+
+## Release v2.1.1 (2026-01-19)
+
+### Release Notes
+Bug fix release addressing issue #93.
+
+### Bug Fixes
+
+#### Fixed Dynamic Brain Map Visualization Not Working (Issue #93, PR #94)
+- **Problem**: Brain stat map sliders (position and saturation) were not visible or functional
+- **Root Cause**: BrainViewer height was set to 280px but component needs ~560px to show all elements
+- **Solution**: Increased BrainViewer height to 560px and removed redundant external saturation slider
+
+### Technical Details
+The BrainViewer component is now fully self-contained with internal position and saturation sliders. The external saturation slider in Plots.js was disconnected and has been removed.
+
+### Files Modified
+- `src/Plots/Plots.js` - Increased BrainViewer height to 560px, removed unused colormapSaturation state and slider
+
+### Release URL
+https://github.com/ME-ICA/rica/releases/tag/v2.1.1
 
