@@ -83,7 +83,7 @@ function App() {
   // Check for local server on mount
   useEffect(() => {
     if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-      fetch(`/api/files?_t=${Date.now()}`)
+      fetch("/api/files", { cache: "no-store" })
         .then((r) => r.json())
         .then((data) => {
           if (data.files?.length > 0) {

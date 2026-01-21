@@ -377,8 +377,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
     hasTriedServerLoad.current = true;
     console.log("[Rica] Checking for local server files...");
 
-    // Try to fetch file list from server (with cache-busting to ensure fresh data)
-    fetch(`/api/files?_t=${Date.now()}`)
+    // Try to fetch file list from server (avoid cached responses)
+    fetch("/api/files", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
         console.log("[Rica] Server response:", data.files?.length, "files found");
