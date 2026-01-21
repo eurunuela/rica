@@ -129,10 +129,15 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
   const hasTriedServerLoad = useRef(false);
 
   // Load files from local server via HTTP
+  // Use cache-busting timestamp to prevent browser from serving stale data
+  // when switching between different tedana output directories (fixes #1323)
   const loadFromServer = useCallback(
     async (files, basePath) => {
       console.log("[Rica] Starting server load with", files.length, "files");
       onLoadingStart();
+
+      // Generate a unique timestamp for cache-busting all requests in this session
+      const cacheBuster = `_t=${Date.now()}`;
 
       // Filter to relevant files
       const relevantFiles = files.filter(
@@ -186,7 +191,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         try {
           // Component figures (PNG)
           if (filename.includes("comp_") && filename.endsWith(".png")) {
-            const response = await fetch(`/${filepath}`);
+            const response = await fetch(`/${filepath}?${cacheBuster}`);
             const blob = await response.blob();
             const dataUrl = await blobToDataURL(blob);
             compFigures.push({ name: filename, img: dataUrl });
@@ -195,7 +200,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
 
           // SVG figures (carpet plots vs diagnostic figures vs external regressors)
           if (filename.endsWith(".svg")) {
-            const response = await fetch(`/${filepath}`);
+            const response = await fetch(`/${filepath}?${cacheBuster}`);
             const blob = await response.blob();
             const dataUrl = await blobToDataURL(blob);
             // Separate carpet plots, external regressors, and diagnostic figures
@@ -211,14 +216,14 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
 
           // Report info
           if (filename === "report.txt") {
-            const response = await fetch(`/${filepath}`);
+            const response = await fetch(`/${filepath}?${cacheBuster}`);
             info = await response.text();
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
           // Component metrics table
           if (filename.includes("_metrics.tsv") && !filename.includes("PCA")) {
-            const response = await fetch(`/${filepath}`);
+            const response = await fetch(`/${filepath}?${cacheBuster}`);
             const text = await response.text();
             const parsed = Papa.parse(text, {
               header: true,
@@ -233,7 +238,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
 
           // Dataset path
           if (filename.startsWith("tedana_20") && filename.endsWith(".tsv")) {
-            const response = await fetch(`/${filepath}`);
+            const response = await fetch(`/${filepath}?${cacheBuster}`);
             const text = await response.text();
             const lines = text.split("\n");
             for (const line of lines) {
@@ -250,7 +255,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
 
           // ICA Mixing matrix (exclude PCA and Orth variants)
           if (filename.includes("_mixing.tsv") && !filename.includes("PCA") && !filename.includes("Orth")) {
-            const response = await fetch(`/${filepath}`);
+            const response = await fetch(`/${filepath}?${cacheBuster}`);
             const text = await response.text();
             mixingMatrix = parseMixingMatrix(text);
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
@@ -258,45 +263,45 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
 
           // ICA stat-z components NIfTI
           if (filename.includes("stat-z_components.nii.gz") && filename.includes("ICA")) {
-            const response = await fetch(`/${filepath}`);
+            const response = await fetch(`/${filepath}?${cacheBuster}`);
             niftiBuffer = await response.arrayBuffer();
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
           // Brain mask NIfTI
           if (filename.includes("_mask.nii") && !maskBuffer) {
-            const response = await fetch(`/${filepath}`);
+            const response = await fetch(`/${filepath}?${cacheBuster}`);
             maskBuffer = await response.arrayBuffer();
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
           // Cross-component metrics (for elbow thresholds)
           if (filename.includes("CrossComponent_metrics.json")) {
-            const response = await fetch(`/${filepath}`);
+            const response = await fetch(`/${filepath}?${cacheBuster}`);
             crossComponentMetrics = await response.json();
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
           // QC NIfTI files (T2*, S0, RMSE)
           if (filename.includes("T2starmap.nii")) {
-            const response = await fetch(`/${filepath}`);
+            const response = await fetch(`/${filepath}?${cacheBuster}`);
             qcNiftiBuffers.t2star = await response.arrayBuffer();
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
           if (filename.includes("S0map.nii") && !filename.includes("limited")) {
-            const response = await fetch(`/${filepath}`);
+            const response = await fetch(`/${filepath}?${cacheBuster}`);
             qcNiftiBuffers.s0 = await response.arrayBuffer();
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
           if (filename.includes("rmse_statmap.nii")) {
-            const response = await fetch(`/${filepath}`);
+            const response = await fetch(`/${filepath}?${cacheBuster}`);
             qcNiftiBuffers.rmse = await response.arrayBuffer();
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
           // Manual classification file
           if (filename === "manual_classification.tsv") {
-            const response = await fetch(`/${filepath}`);
+            const response = await fetch(`/${filepath}?${cacheBuster}`);
             const text = await response.text();
             manualClassificationData = parseManualClassification(text);
             console.log("[Rica] Loaded manual_classification.tsv with", manualClassificationData?.length || 0, "entries");
@@ -305,7 +310,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
 
           // Decision tree JSON
           if (filename.includes("decision_tree.json")) {
-            const response = await fetch(`/${filepath}`);
+            const response = await fetch(`/${filepath}?${cacheBuster}`);
             const text = await response.text();
             decisionTreeData = JSON.parse(text);
             console.log("[Rica] Loaded decision tree with", decisionTreeData?.nodes?.length || 0, "nodes");
@@ -314,7 +319,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
 
           // Status table TSV
           if (filename.includes("status_table.tsv")) {
-            const response = await fetch(`/${filepath}`);
+            const response = await fetch(`/${filepath}?${cacheBuster}`);
             const text = await response.text();
             const parsed = Papa.parse(text, {
               header: true,
@@ -372,8 +377,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
     hasTriedServerLoad.current = true;
     console.log("[Rica] Checking for local server files...");
 
-    // Try to fetch file list from server
-    fetch("/api/files")
+    // Try to fetch file list from server (with cache-busting to ensure fresh data)
+    fetch(`/api/files?_t=${Date.now()}`)
       .then((r) => r.json())
       .then((data) => {
         console.log("[Rica] Server response:", data.files?.length, "files found");
