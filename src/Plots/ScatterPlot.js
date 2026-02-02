@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useRef, useEffect } from "react";
 import { Group } from "@visx/group";
 import { Circle, Line, LinePath } from "@visx/shape";
 import { scaleLinear } from "@visx/scale";
@@ -134,6 +134,35 @@ function ScatterPlot({
     skewY: 0,
   };
 
+  // Ref to store the zoom instance for use in wheel handler
+  const zoomRef = useRef(null);
+  const svgRef = useRef(null);
+  const overlayRef = useRef(null);
+
+  // Attach native wheel event listener with { passive: false } to allow preventDefault
+  // Using SVG element instead of overlay to capture wheel events anywhere on the plot
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    const handleWheel = (event) => {
+      event.preventDefault();
+      const zoom = zoomRef.current;
+      if (!zoom) return;
+
+      const point = localPoint(svg, event) || { x: 0, y: 0 };
+      const scaleFactor = event.deltaY > 0 ? 0.9 : 1.1;
+      zoom.scale({
+        scaleX: scaleFactor,
+        scaleY: scaleFactor,
+        point,
+      });
+    };
+
+    svg.addEventListener("wheel", handleWheel, { passive: false });
+    return () => svg.removeEventListener("wheel", handleWheel);
+  }, []);
+
   // Guard against invalid dimensions - after all hooks
   if (!width || !height || width < 10 || height < 10 || !xScale || !yScale) {
     return (
@@ -162,227 +191,223 @@ function ScatterPlot({
         scaleYMax={4}
         initialTransformMatrix={initialTransform}
       >
-        {(zoom) => (
-          <svg
-            width={width}
-            height={height}
-            style={{ cursor: zoom.isDragging ? "grabbing" : "grab" }}
-          >
-            {/* Background */}
-            <rect width={width} height={height} fill={colors.bg} rx={8} />
-
-            {/* Title */}
-            <text
-              x={width / 2}
-              y={24}
-              textAnchor="middle"
-              fontSize={16}
-              fontWeight="bold"
-              fill={colors.title}
+        {(zoom) => {
+          // Store zoom instance in ref for native wheel handler
+          zoomRef.current = zoom;
+          return (
+            <svg
+              ref={svgRef}
+              width={width}
+              height={height}
+              style={{ cursor: zoom.isDragging ? "grabbing" : "grab" }}
             >
-              {title}
-            </text>
+              {/* Background */}
+              <rect width={width} height={height} fill={colors.bg} rx={8} />
 
-            <Group left={margin.left} top={margin.top}>
-              {/* Clip path for zoom */}
-              <defs>
-                <clipPath id={`clip-${title.replace(/\s+/g, "-")}`}>
-                  <rect width={innerWidth} height={innerHeight} />
-                </clipPath>
-              </defs>
+              {/* Title */}
+              <text
+                x={width / 2}
+                y={24}
+                textAnchor="middle"
+                fontSize={16}
+                fontWeight="bold"
+                fill={colors.title}
+              >
+                {title}
+              </text>
 
-              {/* Grid */}
-              <GridRows
-                scale={yScale}
-                width={innerWidth}
-                stroke={colors.grid}
-                strokeOpacity={0.5}
-              />
-              <GridColumns
-                scale={xScale}
-                height={innerHeight}
-                stroke={colors.grid}
-                strokeOpacity={0.5}
-              />
+              <Group left={margin.left} top={margin.top}>
+                {/* Clip path for zoom */}
+                <defs>
+                  <clipPath id={`clip-${title.replace(/\s+/g, "-")}`}>
+                    <rect width={innerWidth} height={innerHeight} />
+                  </clipPath>
+                </defs>
 
-              {/* Axes */}
-              <AxisBottom
-                top={innerHeight}
-                scale={xScale}
-                numTicks={5}
-                stroke={colors.axis}
-                tickStroke={colors.axis}
-                tickLabelProps={() => ({
-                  fill: colors.tickLabel,
-                  fontSize: 11,
-                  textAnchor: "middle",
-                })}
-                label={xLabel}
-                labelProps={{
-                  fill: colors.axisLabel,
-                  fontSize: 12,
-                  textAnchor: "middle",
-                }}
-              />
-              <AxisLeft
-                scale={yScale}
-                numTicks={5}
-                stroke={colors.axis}
-                tickStroke={colors.axis}
-                tickLabelProps={() => ({
-                  fill: colors.tickLabel,
-                  fontSize: 11,
-                  textAnchor: "end",
-                  dy: "0.33em",
-                })}
-                label={yLabel}
-                labelProps={{
-                  fill: colors.axisLabel,
-                  fontSize: 12,
-                  textAnchor: "middle",
-                  angle: -90,
-                }}
-              />
+                {/* Grid */}
+                <GridRows
+                  scale={yScale}
+                  width={innerWidth}
+                  stroke={colors.grid}
+                  strokeOpacity={0.5}
+                />
+                <GridColumns
+                  scale={xScale}
+                  height={innerHeight}
+                  stroke={colors.grid}
+                  strokeOpacity={0.5}
+                />
 
-              {/* Interactive overlay for zoom/pan */}
-              <rect
-                width={innerWidth}
-                height={innerHeight}
-                fill="transparent"
-                onTouchStart={zoom.dragStart}
-                onTouchMove={zoom.dragMove}
-                onTouchEnd={zoom.dragEnd}
-                onMouseDown={zoom.dragStart}
-                onMouseMove={zoom.dragMove}
-                onMouseUp={zoom.dragEnd}
-                onMouseLeave={() => {
-                  if (zoom.isDragging) zoom.dragEnd();
-                }}
-                onDoubleClick={(event) => {
-                  const point = localPoint(event) || { x: 0, y: 0 };
-                  zoom.scale({ scaleX: 1.5, scaleY: 1.5, point });
-                }}
-                onWheel={(event) => {
-                  event.preventDefault();
-                  const point = localPoint(event) || { x: 0, y: 0 };
-                  const scaleFactor = event.deltaY > 0 ? 0.9 : 1.1;
-                  zoom.scale({
-                    scaleX: scaleFactor,
-                    scaleY: scaleFactor,
-                    point,
-                  });
-                }}
-              />
+                {/* Axes */}
+                <AxisBottom
+                  top={innerHeight}
+                  scale={xScale}
+                  numTicks={5}
+                  stroke={colors.axis}
+                  tickStroke={colors.axis}
+                  tickLabelProps={() => ({
+                    fill: colors.tickLabel,
+                    fontSize: 11,
+                    textAnchor: "middle",
+                  })}
+                  label={xLabel}
+                  labelProps={{
+                    fill: colors.axisLabel,
+                    fontSize: 12,
+                    textAnchor: "middle",
+                  }}
+                />
+                <AxisLeft
+                  scale={yScale}
+                  numTicks={5}
+                  stroke={colors.axis}
+                  tickStroke={colors.axis}
+                  tickLabelProps={() => ({
+                    fill: colors.tickLabel,
+                    fontSize: 11,
+                    textAnchor: "end",
+                    dy: "0.33em",
+                  })}
+                  label={yLabel}
+                  labelProps={{
+                    fill: colors.axisLabel,
+                    fontSize: 12,
+                    textAnchor: "middle",
+                    angle: -90,
+                  }}
+                />
 
-              {/* Data points and reference lines - render inside zoom transform */}
-              <Group clipPath={`url(#clip-${title.replace(/\s+/g, "-")})`}>
-                <g transform={zoom.toString()}>
-                  {/* Diagonal x=y reference line */}
-                  {showDiagonal &&
-                    (() => {
-                      // Calculate diagonal endpoints based on the intersection with chart bounds
-                      const xDomain = xScale.domain();
-                      const yDomain = yScale.domain();
-                      const diagMin = Math.max(xDomain[0], yDomain[0]);
-                      const diagMax = Math.min(xDomain[1], yDomain[1]);
+                {/* Interactive overlay for zoom/pan */}
+                <rect
+                  ref={overlayRef}
+                  width={innerWidth}
+                  height={innerHeight}
+                  fill="transparent"
+                  onTouchStart={zoom.dragStart}
+                  onTouchMove={zoom.dragMove}
+                  onTouchEnd={zoom.dragEnd}
+                  onMouseDown={zoom.dragStart}
+                  onMouseMove={zoom.dragMove}
+                  onMouseUp={zoom.dragEnd}
+                  onMouseLeave={() => {
+                    if (zoom.isDragging) zoom.dragEnd();
+                  }}
+                  onDoubleClick={(event) => {
+                    const point = localPoint(event) || { x: 0, y: 0 };
+                    zoom.scale({ scaleX: 1.5, scaleY: 1.5, point });
+                  }}
+                />
+
+                {/* Data points and reference lines - render inside zoom transform */}
+                <Group clipPath={`url(#clip-${title.replace(/\s+/g, "-")})`}>
+                  <g transform={zoom.toString()}>
+                    {/* Diagonal x=y reference line */}
+                    {showDiagonal &&
+                      (() => {
+                        // Calculate diagonal endpoints based on the intersection with chart bounds
+                        const xDomain = xScale.domain();
+                        const yDomain = yScale.domain();
+                        const diagMin = Math.max(xDomain[0], yDomain[0]);
+                        const diagMax = Math.min(xDomain[1], yDomain[1]);
+                        return (
+                          <Line
+                            from={{ x: xScale(diagMin), y: yScale(diagMin) }}
+                            to={{ x: xScale(diagMax), y: yScale(diagMax) }}
+                            stroke={colors.diagonal}
+                            strokeWidth={1}
+                            strokeDasharray="4,4"
+                            strokeOpacity={0.8}
+                          />
+                        );
+                      })()}
+
+                    {/* Horizontal threshold line (rho elbow) */}
+                    {hLine !== undefined && hLine !== null && (
+                      <Line
+                        from={{ x: 0, y: yScale(hLine) }}
+                        to={{ x: innerWidth, y: yScale(hLine) }}
+                        stroke={colors.refLine}
+                        strokeWidth={1.5}
+                        strokeDasharray="6,4"
+                        strokeOpacity={0.9}
+                      />
+                    )}
+
+                    {/* Vertical threshold line (kappa elbow) */}
+                    {vLine !== undefined && vLine !== null && (
+                      <Line
+                        from={{ x: xScale(vLine), y: 0 }}
+                        to={{ x: xScale(vLine), y: innerHeight }}
+                        stroke={colors.refLine}
+                        strokeWidth={1.5}
+                        strokeDasharray="6,4"
+                        strokeOpacity={0.9}
+                      />
+                    )}
+
+                    {/* Connecting line for rank plots */}
+                    {connectingLine && connectingLine.length > 0 && (
+                      <LinePath
+                        data={connectingLine}
+                        x={(d) => xScale(d.x)}
+                        y={(d) => yScale(d.y)}
+                        stroke={colors.connectLine}
+                        strokeWidth={1.5}
+                        strokeOpacity={0.7}
+                      />
+                    )}
+
+                    {/* Non-selected points first */}
+                    {data.map((d, i) => {
+                      if (i === selectedIndex) return null;
+                      const cx = xScale(getX(d));
+                      const cy = yScale(getY(d));
                       return (
-                        <Line
-                          from={{ x: xScale(diagMin), y: yScale(diagMin) }}
-                          to={{ x: xScale(diagMax), y: yScale(diagMax) }}
-                          stroke={colors.diagonal}
+                        <Circle
+                          key={d.label || i}
+                          cx={cx}
+                          cy={cy}
+                          r={6}
+                          fill={getColor(d, i)}
+                          stroke={colors.stroke}
                           strokeWidth={1}
-                          strokeDasharray="4,4"
-                          strokeOpacity={0.8}
+                          style={{
+                            cursor: "pointer",
+                            transition: "all 0.15s ease-out",
+                          }}
+                          onMouseEnter={(e) => handleMouseOver(e, d, i)}
+                          onMouseLeave={hideTooltip}
+                          onClick={() => onPointClick(i)}
                         />
                       );
-                    })()}
-
-                  {/* Horizontal threshold line (rho elbow) */}
-                  {hLine !== undefined && hLine !== null && (
-                    <Line
-                      from={{ x: 0, y: yScale(hLine) }}
-                      to={{ x: innerWidth, y: yScale(hLine) }}
-                      stroke={colors.refLine}
-                      strokeWidth={1.5}
-                      strokeDasharray="6,4"
-                      strokeOpacity={0.9}
-                    />
-                  )}
-
-                  {/* Vertical threshold line (kappa elbow) */}
-                  {vLine !== undefined && vLine !== null && (
-                    <Line
-                      from={{ x: xScale(vLine), y: 0 }}
-                      to={{ x: xScale(vLine), y: innerHeight }}
-                      stroke={colors.refLine}
-                      strokeWidth={1.5}
-                      strokeDasharray="6,4"
-                      strokeOpacity={0.9}
-                    />
-                  )}
-
-                  {/* Connecting line for rank plots */}
-                  {connectingLine && connectingLine.length > 0 && (
-                    <LinePath
-                      data={connectingLine}
-                      x={(d) => xScale(d.x)}
-                      y={(d) => yScale(d.y)}
-                      stroke={colors.connectLine}
-                      strokeWidth={1.5}
-                      strokeOpacity={0.7}
-                    />
-                  )}
-
-                  {/* Non-selected points first */}
-                  {data.map((d, i) => {
-                    if (i === selectedIndex) return null;
-                    const cx = xScale(getX(d));
-                    const cy = yScale(getY(d));
-                    return (
+                    })}
+                    {/* Selected point last (on top) */}
+                    {data[selectedIndex] && (
                       <Circle
-                        key={d.label || i}
-                        cx={cx}
-                        cy={cy}
-                        r={6}
-                        fill={getColor(d, i)}
-                        stroke={colors.stroke}
-                        strokeWidth={1}
+                        key={data[selectedIndex].label || selectedIndex}
+                        cx={xScale(getX(data[selectedIndex]))}
+                        cy={yScale(getY(data[selectedIndex]))}
+                        r={8}
+                        fill={getColor(data[selectedIndex], selectedIndex)}
+                        stroke={colors.selectedStroke}
+                        strokeWidth={2}
                         style={{
                           cursor: "pointer",
                           transition: "all 0.15s ease-out",
                         }}
-                        onMouseEnter={(e) => handleMouseOver(e, d, i)}
+                        onMouseEnter={(e) =>
+                          handleMouseOver(e, data[selectedIndex], selectedIndex)
+                        }
                         onMouseLeave={hideTooltip}
-                        onClick={() => onPointClick(i)}
+                        onClick={() => onPointClick(selectedIndex)}
                       />
-                    );
-                  })}
-                  {/* Selected point last (on top) */}
-                  {data[selectedIndex] && (
-                    <Circle
-                      key={data[selectedIndex].label || selectedIndex}
-                      cx={xScale(getX(data[selectedIndex]))}
-                      cy={yScale(getY(data[selectedIndex]))}
-                      r={8}
-                      fill={getColor(data[selectedIndex], selectedIndex)}
-                      stroke={colors.selectedStroke}
-                      strokeWidth={2}
-                      style={{
-                        cursor: "pointer",
-                        transition: "all 0.15s ease-out",
-                      }}
-                      onMouseEnter={(e) =>
-                        handleMouseOver(e, data[selectedIndex], selectedIndex)
-                      }
-                      onMouseLeave={hideTooltip}
-                      onClick={() => onPointClick(selectedIndex)}
-                    />
-                  )}
-                </g>
+                    )}
+                  </g>
+                </Group>
               </Group>
-            </Group>
-          </svg>
-        )}
+            </svg>
+          );
+        }}
       </Zoom>
 
       {/* Tooltip */}

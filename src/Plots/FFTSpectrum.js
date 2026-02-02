@@ -1,4 +1,10 @@
-import React, { useMemo, useCallback, useState } from "react";
+import React, {
+  useMemo,
+  useCallback,
+  useState,
+  useRef,
+  useEffect,
+} from "react";
 import { Group } from "@visx/group";
 import { LinePath, Line } from "@visx/shape";
 import { scaleLinear } from "@visx/scale";
@@ -12,18 +18,26 @@ import { computePowerSpectrum } from "../utils/fftUtils";
 
 const margin = { top: 40, right: 20, bottom: 50, left: 60 };
 
-function FFTSpectrum({ timeSeries, width, height, title, sampleRate = 1, lineColor = "#10b981", isDark = false }) {
+function FFTSpectrum({
+  timeSeries,
+  width,
+  height,
+  title,
+  sampleRate = 1,
+  lineColor = "#10b981",
+  isDark = false,
+}) {
   // Theme colors
   const colors = {
-    bg: isDark ? '#18181b' : '#ffffff',
-    title: isDark ? '#fafafa' : '#374151',
-    axis: isDark ? '#71717a' : '#9ca3af',
-    axisLabel: isDark ? '#a1a1aa' : '#374151',
-    tickLabel: isDark ? '#a1a1aa' : '#6b7280',
-    grid: isDark ? '#27272a' : '#e5e7eb',
-    hoverLine: isDark ? '#71717a' : '#9ca3af',
-    pointStroke: isDark ? '#18181b' : '#ffffff',
-    noData: isDark ? '#71717a' : '#9ca3af',
+    bg: isDark ? "#18181b" : "#ffffff",
+    title: isDark ? "#fafafa" : "#374151",
+    axis: isDark ? "#71717a" : "#9ca3af",
+    axisLabel: isDark ? "#a1a1aa" : "#374151",
+    tickLabel: isDark ? "#a1a1aa" : "#6b7280",
+    grid: isDark ? "#27272a" : "#e5e7eb",
+    hoverLine: isDark ? "#71717a" : "#9ca3af",
+    pointStroke: isDark ? "#18181b" : "#ffffff",
+    noData: isDark ? "#71717a" : "#9ca3af",
   };
 
   const [hoverIndex, setHoverIndex] = useState(null);
@@ -119,7 +133,7 @@ function FFTSpectrum({ timeSeries, width, height, title, sampleRate = 1, lineCol
         tooltipTop: coords.y,
       });
     },
-    [xScale, yScale, points, showTooltip]
+    [xScale, yScale, points, showTooltip],
   );
 
   const handleMouseLeave = useCallback(() => {
@@ -136,8 +150,45 @@ function FFTSpectrum({ timeSeries, width, height, title, sampleRate = 1, lineCol
     skewY: 0,
   };
 
+  // Ref to store the zoom instance for use in wheel handler
+  const zoomRef = useRef(null);
+  const svgRef = useRef(null);
+  const overlayRef = useRef(null);
+
+  // Attach native wheel event listener with { passive: false } to allow preventDefault
+  // Using SVG element instead of overlay to capture wheel events anywhere on the plot
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    const handleWheel = (event) => {
+      event.preventDefault();
+      const zoom = zoomRef.current;
+      if (!zoom) return;
+
+      const point = localPoint(svg, event) || { x: 0, y: 0 };
+      const scaleFactor = event.deltaY > 0 ? 0.9 : 1.1;
+      zoom.scale({
+        scaleX: scaleFactor,
+        scaleY: scaleFactor,
+        point,
+      });
+    };
+
+    svg.addEventListener("wheel", handleWheel, { passive: false });
+    return () => svg.removeEventListener("wheel", handleWheel);
+  }, []);
+
   // Guard against invalid dimensions
-  if (!width || !height || width < 10 || height < 10 || !xScale || !yScale || !points.length) {
+  if (
+    !width ||
+    !height ||
+    width < 10 ||
+    height < 10 ||
+    !xScale ||
+    !yScale ||
+    !points.length
+  ) {
     return (
       <div
         style={{
@@ -158,7 +209,10 @@ function FFTSpectrum({ timeSeries, width, height, title, sampleRate = 1, lineCol
   }
 
   return (
-    <div ref={containerRef} style={{ position: "relative", width: "100%", height: "100%" }}>
+    <div
+      ref={containerRef}
+      style={{ position: "relative", width: "100%", height: "100%" }}
+    >
       <Zoom
         width={width}
         height={height}
@@ -168,157 +222,161 @@ function FFTSpectrum({ timeSeries, width, height, title, sampleRate = 1, lineCol
         scaleYMax={4}
         initialTransformMatrix={initialTransform}
       >
-        {(zoom) => (
-          <svg
-            width={width}
-            height={height}
-            style={{ cursor: zoom.isDragging ? "grabbing" : "crosshair" }}
-          >
-            {/* Background */}
-            <rect width={width} height={height} fill={colors.bg} rx={8} />
-
-            {/* Title */}
-            <text
-              x={width / 2}
-              y={24}
-              textAnchor="middle"
-              fontSize={14}
-              fontWeight="bold"
-              fill={colors.title}
+        {(zoom) => {
+          // Store zoom instance in ref for native wheel handler
+          zoomRef.current = zoom;
+          return (
+            <svg
+              ref={svgRef}
+              width={width}
+              height={height}
+              style={{ cursor: zoom.isDragging ? "grabbing" : "crosshair" }}
             >
-              {title || "Power Spectrum"}
-            </text>
+              {/* Background */}
+              <rect width={width} height={height} fill={colors.bg} rx={8} />
 
-            <Group left={margin.left} top={margin.top}>
-              {/* Clip path for zoom */}
-              <defs>
-                <clipPath id="clip-fft">
-                  <rect width={innerWidth} height={innerHeight} />
-                </clipPath>
-              </defs>
+              {/* Title */}
+              <text
+                x={width / 2}
+                y={24}
+                textAnchor="middle"
+                fontSize={14}
+                fontWeight="bold"
+                fill={colors.title}
+              >
+                {title || "Power Spectrum"}
+              </text>
 
-              {/* Grid */}
-              <GridRows
-                scale={yScale}
-                width={innerWidth}
-                stroke={colors.grid}
-                strokeOpacity={0.5}
-              />
-              <GridColumns
-                scale={xScale}
-                height={innerHeight}
-                stroke={colors.grid}
-                strokeOpacity={0.5}
-              />
+              <Group left={margin.left} top={margin.top}>
+                {/* Clip path for zoom */}
+                <defs>
+                  <clipPath id="clip-fft">
+                    <rect width={innerWidth} height={innerHeight} />
+                  </clipPath>
+                </defs>
 
-              {/* Axes */}
-              <AxisBottom
-                top={innerHeight}
-                scale={xScale}
-                numTicks={5}
-                stroke={colors.axis}
-                tickStroke={colors.axis}
-                tickLabelProps={() => ({
-                  fill: colors.tickLabel,
-                  fontSize: 10,
-                  textAnchor: "middle",
-                })}
-                label="Frequency (cycles/TR)"
-                labelProps={{
-                  fill: colors.axisLabel,
-                  fontSize: 11,
-                  textAnchor: "middle",
-                }}
-              />
-              <AxisLeft
-                scale={yScale}
-                numTicks={5}
-                stroke={colors.axis}
-                tickStroke={colors.axis}
-                tickLabelProps={() => ({
-                  fill: colors.tickLabel,
-                  fontSize: 10,
-                  textAnchor: "end",
-                  dy: "0.33em",
-                })}
-                label="Power"
-                labelProps={{
-                  fill: colors.axisLabel,
-                  fontSize: 11,
-                  textAnchor: "middle",
-                  angle: -90,
-                }}
-                tickFormat={(v) => v.toExponential(0)}
-              />
+                {/* Grid */}
+                <GridRows
+                  scale={yScale}
+                  width={innerWidth}
+                  stroke={colors.grid}
+                  strokeOpacity={0.5}
+                />
+                <GridColumns
+                  scale={xScale}
+                  height={innerHeight}
+                  stroke={colors.grid}
+                  strokeOpacity={0.5}
+                />
 
-              {/* Interactive overlay for zoom/pan and hover */}
-              <rect
-                width={innerWidth}
-                height={innerHeight}
-                fill="transparent"
-                onTouchStart={zoom.dragStart}
-                onTouchMove={zoom.dragMove}
-                onTouchEnd={zoom.dragEnd}
-                onMouseDown={zoom.dragStart}
-                onMouseMove={(e) => {
-                  zoom.dragMove(e);
-                  handleMouseMove(e);
-                }}
-                onMouseUp={zoom.dragEnd}
-                onMouseLeave={() => {
-                  if (zoom.isDragging) zoom.dragEnd();
-                  handleMouseLeave();
-                }}
-                onDoubleClick={(event) => {
-                  const point = localPoint(event) || { x: 0, y: 0 };
-                  zoom.scale({ scaleX: 1.5, scaleY: 1.5, point });
-                }}
-                onWheel={(event) => {
-                  const point = localPoint(event) || { x: 0, y: 0 };
-                  const scaleFactor = event.deltaY > 0 ? 0.9 : 1.1;
-                  zoom.scale({ scaleX: scaleFactor, scaleY: scaleFactor, point });
-                }}
-              />
+                {/* Axes */}
+                <AxisBottom
+                  top={innerHeight}
+                  scale={xScale}
+                  numTicks={5}
+                  stroke={colors.axis}
+                  tickStroke={colors.axis}
+                  tickLabelProps={() => ({
+                    fill: colors.tickLabel,
+                    fontSize: 10,
+                    textAnchor: "middle",
+                  })}
+                  label="Frequency (cycles/TR)"
+                  labelProps={{
+                    fill: colors.axisLabel,
+                    fontSize: 11,
+                    textAnchor: "middle",
+                  }}
+                />
+                <AxisLeft
+                  scale={yScale}
+                  numTicks={5}
+                  stroke={colors.axis}
+                  tickStroke={colors.axis}
+                  tickLabelProps={() => ({
+                    fill: colors.tickLabel,
+                    fontSize: 10,
+                    textAnchor: "end",
+                    dy: "0.33em",
+                  })}
+                  label="Power"
+                  labelProps={{
+                    fill: colors.axisLabel,
+                    fontSize: 11,
+                    textAnchor: "middle",
+                    angle: -90,
+                  }}
+                  tickFormat={(v) => v.toExponential(0)}
+                />
 
-              {/* Line path */}
-              <Group clipPath="url(#clip-fft)">
-                <g transform={zoom.toString()}>
-                  <LinePath
-                    data={points}
-                    x={(d) => xScale(d.x)}
-                    y={(d) => yScale(d.y)}
-                    stroke={lineColor}
-                    strokeWidth={1.5}
-                    curve={curveLinear}
-                  />
+                {/* Interactive overlay for zoom/pan and hover */}
+                <rect
+                  ref={overlayRef}
+                  width={innerWidth}
+                  height={innerHeight}
+                  fill="transparent"
+                  onTouchStart={zoom.dragStart}
+                  onTouchMove={zoom.dragMove}
+                  onTouchEnd={zoom.dragEnd}
+                  onMouseDown={zoom.dragStart}
+                  onMouseMove={(e) => {
+                    zoom.dragMove(e);
+                    handleMouseMove(e);
+                  }}
+                  onMouseUp={zoom.dragEnd}
+                  onMouseLeave={() => {
+                    if (zoom.isDragging) zoom.dragEnd();
+                    handleMouseLeave();
+                  }}
+                  onDoubleClick={(event) => {
+                    const point = localPoint(event) || { x: 0, y: 0 };
+                    zoom.scale({ scaleX: 1.5, scaleY: 1.5, point });
+                  }}
+                />
 
-                  {/* Hover indicator */}
-                  {hoverIndex !== null && points[hoverIndex] && (
-                    <>
-                      <Line
-                        from={{ x: xScale(points[hoverIndex].x), y: 0 }}
-                        to={{ x: xScale(points[hoverIndex].x), y: innerHeight }}
-                        stroke={colors.hoverLine}
-                        strokeWidth={1}
-                        strokeDasharray="4,4"
-                        pointerEvents="none"
-                      />
-                      <circle
-                        cx={xScale(points[hoverIndex].x)}
-                        cy={yScale(points[hoverIndex].y)}
-                        r={4}
-                        fill={lineColor}
-                        stroke={colors.pointStroke}
-                        strokeWidth={2}
-                        pointerEvents="none"
-                      />
-                    </>
-                  )}
-                </g>
+                {/* Line path */}
+                <Group clipPath="url(#clip-fft)">
+                  <g transform={zoom.toString()}>
+                    <LinePath
+                      data={points}
+                      x={(d) => xScale(d.x)}
+                      y={(d) => yScale(d.y)}
+                      stroke={lineColor}
+                      strokeWidth={1.5}
+                      curve={curveLinear}
+                    />
+
+                    {/* Hover indicator */}
+                    {hoverIndex !== null && points[hoverIndex] && (
+                      <>
+                        <Line
+                          from={{ x: xScale(points[hoverIndex].x), y: 0 }}
+                          to={{
+                            x: xScale(points[hoverIndex].x),
+                            y: innerHeight,
+                          }}
+                          stroke={colors.hoverLine}
+                          strokeWidth={1}
+                          strokeDasharray="4,4"
+                          pointerEvents="none"
+                        />
+                        <circle
+                          cx={xScale(points[hoverIndex].x)}
+                          cy={yScale(points[hoverIndex].y)}
+                          r={4}
+                          fill={lineColor}
+                          stroke={colors.pointStroke}
+                          strokeWidth={2}
+                          pointerEvents="none"
+                        />
+                      </>
+                    )}
+                  </g>
+                </Group>
               </Group>
-            </Group>
-          </svg>
-        )}
+            </svg>
+          );
+        }}
       </Zoom>
 
       {/* Tooltip */}
