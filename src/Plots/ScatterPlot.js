@@ -263,6 +263,7 @@ function ScatterPlot({
                   zoom.scale({ scaleX: 1.5, scaleY: 1.5, point });
                 }}
                 onWheel={(event) => {
+                  event.preventDefault();
                   const point = localPoint(event) || { x: 0, y: 0 };
                   const scaleFactor = event.deltaY > 0 ? 0.9 : 1.1;
                   zoom.scale({
