@@ -33,24 +33,24 @@ function ScatterPlot({
   getX,
   getY,
   isDark = false,
-  hLine,              // Optional horizontal threshold line value
-  vLine,              // Optional vertical threshold line value
-  showDiagonal,       // Show x=y diagonal reference line
-  connectingLine,     // Array of {x, y} points for connecting line
+  hLine, // Optional horizontal threshold line value
+  vLine, // Optional vertical threshold line value
+  showDiagonal, // Show x=y diagonal reference line
+  connectingLine, // Array of {x, y} points for connecting line
 }) {
   // Theme colors
   const colors = {
-    bg: isDark ? '#18181b' : '#ffffff',
-    title: isDark ? '#fafafa' : '#374151',
-    axis: isDark ? '#71717a' : '#9ca3af',
-    axisLabel: isDark ? '#a1a1aa' : '#374151',
-    tickLabel: isDark ? '#a1a1aa' : '#6b7280',
-    grid: isDark ? '#27272a' : '#e5e7eb',
-    stroke: isDark ? '#27272a' : '#ffffff',
-    selectedStroke: isDark ? '#fafafa' : '#1f2937',
-    refLine: isDark ? '#71717a' : '#9ca3af',          // Reference/threshold lines
-    diagonal: isDark ? '#52525b' : '#d1d5db',          // Diagonal x=y line
-    connectLine: isDark ? '#52525b' : '#6b7280',       // Connecting line for rank plots
+    bg: isDark ? "#18181b" : "#ffffff",
+    title: isDark ? "#fafafa" : "#374151",
+    axis: isDark ? "#71717a" : "#9ca3af",
+    axisLabel: isDark ? "#a1a1aa" : "#374151",
+    tickLabel: isDark ? "#a1a1aa" : "#6b7280",
+    grid: isDark ? "#27272a" : "#e5e7eb",
+    stroke: isDark ? "#27272a" : "#ffffff",
+    selectedStroke: isDark ? "#fafafa" : "#1f2937",
+    refLine: isDark ? "#71717a" : "#9ca3af", // Reference/threshold lines
+    diagonal: isDark ? "#52525b" : "#d1d5db", // Diagonal x=y line
+    connectLine: isDark ? "#52525b" : "#6b7280", // Connecting line for rank plots
   };
   const {
     tooltipData,
@@ -98,26 +98,32 @@ function ScatterPlot({
 
   const COLORS = getColors(isDark);
 
-  const getColor = useCallback((d, index) => {
-    const isSelected = index === selectedIndex;
-    const classification = d.classification;
-    if (classification === "accepted") {
-      return isSelected ? COLORS.acceptedHover : COLORS.accepted;
-    } else if (classification === "rejected") {
-      return isSelected ? COLORS.rejectedHover : COLORS.rejected;
-    } else {
-      return isSelected ? COLORS.ignoredHover : COLORS.ignored;
-    }
-  }, [selectedIndex, COLORS]);
+  const getColor = useCallback(
+    (d, index) => {
+      const isSelected = index === selectedIndex;
+      const classification = d.classification;
+      if (classification === "accepted") {
+        return isSelected ? COLORS.acceptedHover : COLORS.accepted;
+      } else if (classification === "rejected") {
+        return isSelected ? COLORS.rejectedHover : COLORS.rejected;
+      } else {
+        return isSelected ? COLORS.ignoredHover : COLORS.ignored;
+      }
+    },
+    [selectedIndex, COLORS],
+  );
 
-  const handleMouseOver = useCallback((event, d, index) => {
-    const coords = localPoint(event);
-    showTooltip({
-      tooltipData: { ...d, index },
-      tooltipLeft: coords?.x,
-      tooltipTop: coords?.y,
-    });
-  }, [showTooltip]);
+  const handleMouseOver = useCallback(
+    (event, d, index) => {
+      const coords = localPoint(event);
+      showTooltip({
+        tooltipData: { ...d, index },
+        tooltipLeft: coords?.x,
+        tooltipTop: coords?.y,
+      });
+    },
+    [showTooltip],
+  );
 
   const initialTransform = {
     scaleX: 1,
@@ -130,11 +136,23 @@ function ScatterPlot({
 
   // Guard against invalid dimensions - after all hooks
   if (!width || !height || width < 10 || height < 10 || !xScale || !yScale) {
-    return <div style={{ width: "100%", height: "100%", background: colors.bg, borderRadius: 8 }} />;
+    return (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          background: colors.bg,
+          borderRadius: 8,
+        }}
+      />
+    );
   }
 
   return (
-    <div ref={containerRef} style={{ position: "relative", width: "100%", height: "100%" }}>
+    <div
+      ref={containerRef}
+      style={{ position: "relative", width: "100%", height: "100%" }}
+    >
       <Zoom
         width={width}
         height={height}
@@ -151,12 +169,7 @@ function ScatterPlot({
             style={{ cursor: zoom.isDragging ? "grabbing" : "grab" }}
           >
             {/* Background */}
-            <rect
-              width={width}
-              height={height}
-              fill={colors.bg}
-              rx={8}
-            />
+            <rect width={width} height={height} fill={colors.bg} rx={8} />
 
             {/* Title */}
             <text
@@ -173,7 +186,7 @@ function ScatterPlot({
             <Group left={margin.left} top={margin.top}>
               {/* Clip path for zoom */}
               <defs>
-                <clipPath id={`clip-${title.replace(/\s+/g, '-')}`}>
+                <clipPath id={`clip-${title.replace(/\s+/g, "-")}`}>
                   <rect width={innerWidth} height={innerHeight} />
                 </clipPath>
               </defs>
@@ -191,61 +204,6 @@ function ScatterPlot({
                 stroke={colors.grid}
                 strokeOpacity={0.5}
               />
-
-              {/* Diagonal x=y reference line */}
-              {showDiagonal && (() => {
-                // Calculate diagonal endpoints based on the intersection with chart bounds
-                const xDomain = xScale.domain();
-                const yDomain = yScale.domain();
-                const diagMin = Math.max(xDomain[0], yDomain[0]);
-                const diagMax = Math.min(xDomain[1], yDomain[1]);
-                return (
-                  <Line
-                    from={{ x: xScale(diagMin), y: yScale(diagMin) }}
-                    to={{ x: xScale(diagMax), y: yScale(diagMax) }}
-                    stroke={colors.diagonal}
-                    strokeWidth={1}
-                    strokeDasharray="4,4"
-                    strokeOpacity={0.8}
-                  />
-                );
-              })()}
-
-              {/* Horizontal threshold line (rho elbow) */}
-              {hLine !== undefined && hLine !== null && (
-                <Line
-                  from={{ x: 0, y: yScale(hLine) }}
-                  to={{ x: innerWidth, y: yScale(hLine) }}
-                  stroke={colors.refLine}
-                  strokeWidth={1.5}
-                  strokeDasharray="6,4"
-                  strokeOpacity={0.9}
-                />
-              )}
-
-              {/* Vertical threshold line (kappa elbow) */}
-              {vLine !== undefined && vLine !== null && (
-                <Line
-                  from={{ x: xScale(vLine), y: 0 }}
-                  to={{ x: xScale(vLine), y: innerHeight }}
-                  stroke={colors.refLine}
-                  strokeWidth={1.5}
-                  strokeDasharray="6,4"
-                  strokeOpacity={0.9}
-                />
-              )}
-
-              {/* Connecting line for rank plots */}
-              {connectingLine && connectingLine.length > 0 && (
-                <LinePath
-                  data={connectingLine}
-                  x={(d) => xScale(d.x)}
-                  y={(d) => yScale(d.y)}
-                  stroke={colors.connectLine}
-                  strokeWidth={1.5}
-                  strokeOpacity={0.7}
-                />
-              )}
 
               {/* Axes */}
               <AxisBottom
@@ -307,13 +265,73 @@ function ScatterPlot({
                 onWheel={(event) => {
                   const point = localPoint(event) || { x: 0, y: 0 };
                   const scaleFactor = event.deltaY > 0 ? 0.9 : 1.1;
-                  zoom.scale({ scaleX: scaleFactor, scaleY: scaleFactor, point });
+                  zoom.scale({
+                    scaleX: scaleFactor,
+                    scaleY: scaleFactor,
+                    point,
+                  });
                 }}
               />
 
-              {/* Data points - render selected last to be on top */}
-              <Group clipPath={`url(#clip-${title.replace(/\s+/g, '-')})`}>
+              {/* Data points and reference lines - render inside zoom transform */}
+              <Group clipPath={`url(#clip-${title.replace(/\s+/g, "-")})`}>
                 <g transform={zoom.toString()}>
+                  {/* Diagonal x=y reference line */}
+                  {showDiagonal &&
+                    (() => {
+                      // Calculate diagonal endpoints based on the intersection with chart bounds
+                      const xDomain = xScale.domain();
+                      const yDomain = yScale.domain();
+                      const diagMin = Math.max(xDomain[0], yDomain[0]);
+                      const diagMax = Math.min(xDomain[1], yDomain[1]);
+                      return (
+                        <Line
+                          from={{ x: xScale(diagMin), y: yScale(diagMin) }}
+                          to={{ x: xScale(diagMax), y: yScale(diagMax) }}
+                          stroke={colors.diagonal}
+                          strokeWidth={1}
+                          strokeDasharray="4,4"
+                          strokeOpacity={0.8}
+                        />
+                      );
+                    })()}
+
+                  {/* Horizontal threshold line (rho elbow) */}
+                  {hLine !== undefined && hLine !== null && (
+                    <Line
+                      from={{ x: 0, y: yScale(hLine) }}
+                      to={{ x: innerWidth, y: yScale(hLine) }}
+                      stroke={colors.refLine}
+                      strokeWidth={1.5}
+                      strokeDasharray="6,4"
+                      strokeOpacity={0.9}
+                    />
+                  )}
+
+                  {/* Vertical threshold line (kappa elbow) */}
+                  {vLine !== undefined && vLine !== null && (
+                    <Line
+                      from={{ x: xScale(vLine), y: 0 }}
+                      to={{ x: xScale(vLine), y: innerHeight }}
+                      stroke={colors.refLine}
+                      strokeWidth={1.5}
+                      strokeDasharray="6,4"
+                      strokeOpacity={0.9}
+                    />
+                  )}
+
+                  {/* Connecting line for rank plots */}
+                  {connectingLine && connectingLine.length > 0 && (
+                    <LinePath
+                      data={connectingLine}
+                      x={(d) => xScale(d.x)}
+                      y={(d) => yScale(d.y)}
+                      stroke={colors.connectLine}
+                      strokeWidth={1.5}
+                      strokeOpacity={0.7}
+                    />
+                  )}
+
                   {/* Non-selected points first */}
                   {data.map((d, i) => {
                     if (i === selectedIndex) return null;
@@ -352,7 +370,9 @@ function ScatterPlot({
                         cursor: "pointer",
                         transition: "all 0.15s ease-out",
                       }}
-                      onMouseEnter={(e) => handleMouseOver(e, data[selectedIndex], selectedIndex)}
+                      onMouseEnter={(e) =>
+                        handleMouseOver(e, data[selectedIndex], selectedIndex)
+                      }
                       onMouseLeave={hideTooltip}
                       onClick={() => onPointClick(selectedIndex)}
                     />
@@ -384,7 +404,8 @@ function ScatterPlot({
             {formatComponentName(tooltipData.label)}
           </div>
           <div>
-            {xLabel}: {getX(tooltipData).toFixed(2)} | {yLabel}: {getY(tooltipData).toFixed(2)}
+            {xLabel}: {getX(tooltipData).toFixed(2)} | {yLabel}:{" "}
+            {getY(tooltipData).toFixed(2)}
           </div>
         </TooltipInPortal>
       )}
