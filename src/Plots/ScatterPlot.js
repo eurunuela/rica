@@ -8,6 +8,8 @@ import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
 import { Zoom } from "@visx/zoom";
 import { formatComponentName } from "./PlotUtils";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faRotateLeft } from "@fortawesome/free-solid-svg-icons";
 
 // Theme-aware colors
 const getColors = (isDark) => ({
@@ -409,6 +411,33 @@ function ScatterPlot({
           );
         }}
       </Zoom>
+
+      {/* Reset zoom button */}
+      <button
+        onClick={() => zoomRef.current?.reset()}
+        style={{
+          position: "absolute",
+          top: 4,
+          right: 4,
+          zIndex: 10,
+          padding: "4px 10px",
+          fontSize: 11,
+          fontWeight: 500,
+          borderRadius: 4,
+          border: "none",
+          cursor: "pointer",
+          transition: "all 0.2s ease",
+          backgroundColor: isDark ? "#3f3f46" : "#d1d5db",
+          color: isDark ? "#a1a1aa" : "#6b7280",
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+        }}
+        title="Reset zoom"
+      >
+        <FontAwesomeIcon icon={faRotateLeft} />
+        Reset
+      </button>
 
       {/* Tooltip */}
       {tooltipOpen && tooltipData && (
