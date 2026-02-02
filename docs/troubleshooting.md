@@ -191,17 +191,6 @@ python rica_server.py --no-open
 
 **Solution**: Ensure you started the server from the tedana output directory.
 
-### Browser Shows Old Version After Update
-
-**Cause**: Browser cached a previous version of Rica.
-
-**Solutions**:
-
-1. **Hard refresh**: Press `Ctrl+Shift+R` (Windows/Linux) or `Cmd+Shift+R` (macOS)
-2. **Clear browser cache**: Clear cached files for localhost in your browser settings
-3. **Use a different browser**: Open the Rica URL in a browser that hasn't cached the old version
-4. **Use incognito/private mode**: Open the URL in a private browsing window
-
 ## Getting Help
 
 If your issue isn't covered here:
