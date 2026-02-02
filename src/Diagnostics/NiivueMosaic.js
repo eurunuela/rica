@@ -88,10 +88,24 @@ function NiivueMosaic({ niftiBuffer, maskBuffer, mapType = "gray", width, height
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(null);
   const [contrast, setContrast] = useState(50); // 50% by default (0-100 range)
+  const [threshold, setThreshold] = useState(0); // Threshold 0-100%
+  const [selectedColormap, setSelectedColormap] = useState(null); // null = default based on mapType
   const [sliceOffset, setSliceOffset] = useState(0); // Center offset (-0.5 to 0.5)
   const [numSlices, setNumSlices] = useState(6); // Default number of slices
   const [volumeExtents, setVolumeExtents] = useState(null); // Store volume extents for mosaic
   const maxValRef = useRef(null); // Store max value for contrast adjustments
+
+  // Colormap options
+  const SEQUENTIAL_COLORMAPS = [
+    { value: "gray", label: "Gray" },
+    { value: "hot", label: "Hot" },
+    { value: "bone", label: "Bone" },
+    { value: "viridis", label: "Viridis" },
+    { value: "plasma", label: "Plasma" },
+    { value: "inferno", label: "Inferno" },
+    { value: "magma", label: "Magma" },
+    { value: "cividis", label: "Cividis" },
+  ];
 
   // Brain viewer always has black background
   const canvasBgColor = "#000000";
@@ -115,13 +129,15 @@ function NiivueMosaic({ niftiBuffer, maskBuffer, mapType = "gray", width, height
     []
   );
 
-  const colormap = getColormap(mapType);
+  const colormap = selectedColormap || getColormap(mapType);
   const gamma = getGamma(mapType);
   const title = getTitle(mapType);
 
-  // Reset contrast to 50% when map type changes
+  // Reset contrast to 50% and selectedColormap to null when map type changes
   useEffect(() => {
     setContrast(50);
+    setThreshold(0);
+    setSelectedColormap(null);
   }, [mapType]);
 
   // Calculate number of slices based on container width
@@ -287,7 +303,7 @@ function NiivueMosaic({ niftiBuffer, maskBuffer, mapType = "gray", width, height
     }
   }, [isDark, isLoaded, niivueBgColor]);
 
-  // Update colormap range when contrast changes
+  // Update colormap range when contrast or threshold changes
   // Higher contrast (0-100) = lower cal_max = more visual contrast (colors saturate faster)
   useEffect(() => {
     if (nvRef.current && isLoaded && maxValRef.current) {
@@ -300,14 +316,49 @@ function NiivueMosaic({ niftiBuffer, maskBuffer, mapType = "gray", width, height
           const multiplier = 2 - (contrast / 100) * 1.8;
           const newMax = maxValRef.current * multiplier;
           vol.cal_max = newMax;
+
+          // Apply threshold (0-100% range, with minimum of 0.001)
+          const thresholdVal = Math.max(0.001, maxValRef.current * (threshold / 200));
+          vol.cal_min = thresholdVal;
+
           nv.updateGLVolume();
           nv.drawScene();
         }
       } catch (err) {
-        console.error("Error updating contrast:", err);
+        console.error("Error updating contrast/threshold:", err);
       }
     }
-  }, [contrast, isLoaded]);
+  }, [contrast, threshold, isLoaded]);
+
+  // Update colormap when selectedColormap changes
+  useEffect(() => {
+    if (nvRef.current && isLoaded && maxValRef.current) {
+      try {
+        const nv = nvRef.current;
+        if (nv.volumes && nv.volumes.length > 0) {
+          const vol = nv.volumes[0];
+          vol.colormap = colormap;
+
+          // Preserve colormapInvert for RMSE maps regardless of colormap
+          if (mapType === "rmse") {
+            vol.colormapInvert = true;
+          }
+
+          // Preserve contrast and threshold when changing colormap
+          const multiplier = 2 - (contrast / 100) * 1.8;
+          const newMax = maxValRef.current * multiplier;
+          vol.cal_max = newMax;
+          const thresholdVal = Math.max(0.001, maxValRef.current * (threshold / 200));
+          vol.cal_min = thresholdVal;
+
+          nv.updateGLVolume();
+          nv.drawScene();
+        }
+      } catch (err) {
+        console.error("Error updating colormap:", err);
+      }
+    }
+  }, [selectedColormap, isLoaded, colormap, mapType, contrast, threshold]);
 
   // Handle resize
   const handleResize = useCallback(() => {
@@ -425,7 +476,7 @@ function NiivueMosaic({ niftiBuffer, maskBuffer, mapType = "gray", width, height
         }}
       />
 
-      {/* Controls: Position and Contrast sliders */}
+      {/* Controls: Position, Contrast, Threshold sliders and Colormap dropdown */}
       {isLoaded && (
         <div
           style={{
@@ -531,6 +582,92 @@ function NiivueMosaic({ niftiBuffer, maskBuffer, mapType = "gray", width, height
             >
               {contrast}%
             </span>
+          </div>
+          {/* Threshold slider */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "12px",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "12px",
+                color: sliderText,
+                minWidth: "70px",
+              }}
+            >
+              Threshold
+            </span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={threshold}
+              onChange={(e) => setThreshold(parseInt(e.target.value))}
+              style={{
+                flex: 1,
+                maxWidth: "200px",
+                height: "4px",
+                appearance: "none",
+                background: sliderTrack,
+                borderRadius: "2px",
+                cursor: "pointer",
+                accentColor: sliderThumb,
+              }}
+            />
+            <span
+              style={{
+                fontSize: "12px",
+                color: sliderText,
+                minWidth: "40px",
+                textAlign: "right",
+              }}
+            >
+              {threshold}%
+            </span>
+          </div>
+          {/* Colormap dropdown */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "12px",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "12px",
+                color: sliderText,
+                minWidth: "70px",
+              }}
+            >
+              Colormap
+            </span>
+            <select
+              value={selectedColormap || getColormap(mapType)}
+              onChange={(e) => setSelectedColormap(e.target.value)}
+              style={{
+                padding: "4px 8px",
+                fontSize: "12px",
+                color: sliderText,
+                backgroundColor: isDark ? "#27272a" : "#f3f4f6",
+                border: `1px solid ${isDark ? "#3f3f46" : "#e5e7eb"}`,
+                borderRadius: "4px",
+                cursor: "pointer",
+                flex: 1,
+                maxWidth: "200px",
+              }}
+            >
+              {SEQUENTIAL_COLORMAPS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <span style={{ minWidth: "40px" }} />
           </div>
         </div>
       )}

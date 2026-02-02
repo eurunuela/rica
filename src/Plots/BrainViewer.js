@@ -41,9 +41,28 @@ function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, c
   const [error, setError] = useState(null);
   const [sliceOffset, setSliceOffset] = useState(0); // Center offset (-0.5 to 0.5)
   const [saturation, setSaturation] = useState(0.25); // Colormap saturation (0.01 to 1.0)
+  const [threshold, setThreshold] = useState(0); // Threshold 0-50% of max value
+  const [colormapPositive, setColormapPositive] = useState("warm");
+  const [colormapNegative, setColormapNegative] = useState("cool");
   const [volumeExtents, setVolumeExtents] = useState(null); // Store volume extents for mosaic
   const maxAbsRef = useRef(null); // Store max absolute value for saturation adjustments
   const numSlices = 7; // Fixed at 7 slices per row
+
+  // Colormap options
+  const POSITIVE_COLORMAPS = [
+    { value: "warm", label: "Warm" },
+    { value: "hot", label: "Hot" },
+    { value: "red", label: "Red" },
+    { value: "copper", label: "Copper" },
+    { value: "gold", label: "Gold" },
+  ];
+
+  const NEGATIVE_COLORMAPS = [
+    { value: "cool", label: "Cool" },
+    { value: "winter", label: "Winter" },
+    { value: "blue", label: "Blue" },
+    { value: "violet", label: "Violet" },
+  ];
 
   // Brain viewer always has black background
   const canvasBgColor = "#000000";
@@ -110,9 +129,11 @@ function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, c
         const statVolume = {
           url: statBlobUrl,
           name: "components.nii.gz",
-          colormap: "warm",
-          colormapNegative: "cool",
+          colormap: colormapPositive,
+          colormapNegative: colormapNegative,
           useQFormNotSForm: true,
+          cal_min: 0.001,      // Small positive threshold to hide zero values
+          cal_maxNeg: -0.001,  // Small negative threshold to hide zero values
         };
 
         volumes.push(statVolume);
@@ -132,16 +153,19 @@ function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, c
         if (nv.volumes.length > 0) {
           const vol = nv.volumes[statVolIdx]; // Get stat map (last volume)
           const maxAbs = Math.max(Math.abs(vol.cal_min), Math.abs(vol.cal_max));
-          maxAbsRef.current = maxAbs; // Store for saturation adjustments
+          maxAbsRef.current = maxAbs; // Store for saturation and threshold adjustments
           const range = maxAbs * saturation;
+          // Always use a minimum threshold (0.1% of max) to make zero values transparent
+          const minThresholdPercent = 0.1;
+          const thresholdVal = maxAbs * Math.max(minThresholdPercent, threshold) / 100;
 
-          // Positive values: 0 to max (warm colormap)
-          vol.cal_min = 0;
+          // Positive values: threshold to max (warm colormap)
+          vol.cal_min = thresholdVal;
           vol.cal_max = range;
 
-          // Negative values: -max to 0 (cool colormap)
+          // Negative values: -max to -threshold (cool colormap)
           vol.cal_minNeg = -range;
-          vol.cal_maxNeg = 0;
+          vol.cal_maxNeg = -thresholdVal;
 
           // Get extents in mm for each axis
           const min = vol.extentsMin || [-80, -120, -60];
@@ -243,7 +267,7 @@ function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, c
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [componentIndex, isLoaded]);
 
-  // Update colormap range when saturation changes
+  // Update colormap range when saturation or threshold changes
   useEffect(() => {
     if (nvRef.current && isLoaded && maxAbsRef.current) {
       try {
@@ -252,12 +276,15 @@ function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, c
         if (nv.volumes && nv.volumes.length > 0) {
           const vol = nv.volumes[statVolIndex];
           const range = maxAbsRef.current * saturation;
+          // Always use a minimum threshold (0.1% of max) to make zero values transparent
+          const minThresholdPercent = 0.1;
+          const thresholdVal = maxAbsRef.current * Math.max(minThresholdPercent, threshold) / 100;
 
-          // Update colormap range
-          vol.cal_min = 0;
+          // Update colormap range with threshold
+          vol.cal_min = thresholdVal;
           vol.cal_max = range;
           vol.cal_minNeg = -range;
-          vol.cal_maxNeg = 0;
+          vol.cal_maxNeg = -thresholdVal;
 
           // Set background before redraw
           nv.opts.backColor = niivueBgColor;
@@ -267,10 +294,40 @@ function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, c
           nv.drawScene();
         }
       } catch (err) {
-        console.error("Error updating saturation:", err);
+        console.error("Error updating saturation/threshold:", err);
       }
     }
-  }, [saturation, isLoaded, niivueBgColor]);
+  }, [saturation, threshold, isLoaded, niivueBgColor]);
+
+  // Update colormaps when colormap selections change
+  useEffect(() => {
+    if (nvRef.current && isLoaded && maxAbsRef.current) {
+      try {
+        const nv = nvRef.current;
+        const statVolIndex = nv.volumes.length - 1;
+        if (nv.volumes && nv.volumes.length > 0) {
+          const vol = nv.volumes[statVolIndex];
+          vol.colormap = colormapPositive;
+          vol.colormapNegative = colormapNegative;
+
+          // Preserve saturation and threshold when changing colormap
+          const range = maxAbsRef.current * saturation;
+          const minThresholdPercent = 0.1;
+          const thresholdVal = maxAbsRef.current * Math.max(minThresholdPercent, threshold) / 100;
+          vol.cal_min = thresholdVal;
+          vol.cal_max = range;
+          vol.cal_minNeg = -range;
+          vol.cal_maxNeg = -thresholdVal;
+
+          // Redraw the scene
+          nv.updateGLVolume();
+          nv.drawScene();
+        }
+      } catch (err) {
+        console.error("Error updating colormaps:", err);
+      }
+    }
+  }, [colormapPositive, colormapNegative, isLoaded, saturation, threshold]);
 
   // Handle resize
   const handleResize = useCallback(() => {
@@ -447,8 +504,6 @@ function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, c
             gap: "12px",
             padding: "8px 16px",
             backgroundColor: sliderBg,
-            borderBottomLeftRadius: "8px",
-            borderBottomRightRadius: "8px",
           }}
         >
           <span
@@ -484,6 +539,119 @@ function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, c
           >
             {Math.round(saturation * 100)}%
           </span>
+        </div>
+      )}
+
+      {/* Threshold slider */}
+      {isLoaded && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "12px",
+            padding: "8px 16px",
+            backgroundColor: sliderBg,
+          }}
+        >
+          <span
+            style={{
+              fontSize: "12px",
+              color: sliderText,
+              minWidth: "70px",
+            }}
+          >
+            Threshold
+          </span>
+          <input
+            type="range"
+            min="0"
+            max="50"
+            step="1"
+            value={threshold}
+            onChange={(e) => setThreshold(parseFloat(e.target.value))}
+            style={{
+              flex: 1,
+              maxWidth: "200px",
+              cursor: "pointer",
+              accentColor: "#3b82f6",
+            }}
+          />
+          <span
+            style={{
+              fontSize: "12px",
+              color: sliderText,
+              minWidth: "40px",
+              textAlign: "center",
+            }}
+          >
+            {threshold}%
+          </span>
+        </div>
+      )}
+
+      {/* Colormap dropdowns */}
+      {isLoaded && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "12px",
+            padding: "8px 16px",
+            backgroundColor: sliderBg,
+            borderBottomLeftRadius: "8px",
+            borderBottomRightRadius: "8px",
+          }}
+        >
+          <span
+            style={{
+              fontSize: "12px",
+              color: sliderText,
+              minWidth: "70px",
+            }}
+          >
+            Colormaps
+          </span>
+          <div style={{ display: "flex", gap: "8px", flex: 1, maxWidth: "200px" }}>
+            <select
+              value={colormapPositive}
+              onChange={(e) => setColormapPositive(e.target.value)}
+              style={{
+                padding: "4px 8px",
+                fontSize: "12px",
+                color: sliderText,
+                backgroundColor: isDark ? "#27272a" : "#f3f4f6",
+                border: `1px solid ${isDark ? "#3f3f46" : "#e5e7eb"}`,
+                borderRadius: "4px",
+                cursor: "pointer",
+                flex: 1,
+              }}
+            >
+              {POSITIVE_COLORMAPS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <select
+              value={colormapNegative}
+              onChange={(e) => setColormapNegative(e.target.value)}
+              style={{
+                padding: "4px 8px",
+                fontSize: "12px",
+                color: sliderText,
+                backgroundColor: isDark ? "#27272a" : "#f3f4f6",
+                border: `1px solid ${isDark ? "#3f3f46" : "#e5e7eb"}`,
+                borderRadius: "4px",
+                cursor: "pointer",
+                flex: 1,
+              }}
+            >
+              {NEGATIVE_COLORMAPS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+          <span style={{ minWidth: "40px" }} />
         </div>
       )}
     </div>

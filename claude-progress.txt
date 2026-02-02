@@ -2571,3 +2571,79 @@ The BrainViewer component is now fully self-contained with internal position and
 
 ### Release URL
 https://github.com/ME-ICA/rica/releases/tag/v2.1.1
+
+---
+
+## Session - Enhanced Brain Viewer Controls (2026-02-02)
+
+### Goals
+- Add threshold slider to filter out low-magnitude values in brain maps
+- Add colormap selection dropdowns for customizable visualization
+- Improve zero-value transparency for cleaner brain stat map display
+
+### Changes Made
+
+#### BrainViewer.js (ICA tab component brain maps)
+1. Added **threshold slider** (0-50% range):
+   - Filters out low-magnitude voxels to highlight only significant activations
+   - Always uses a minimum threshold (0.1% of max) to make zero values transparent
+   - Updates both positive (cal_min) and negative (cal_maxNeg) thresholds symmetrically
+
+2. Added **colormap dropdowns** for positive and negative colormaps:
+   - Positive colormap options: Warm (default), Hot, Red, Copper, Gold
+   - Negative colormap options: Cool (default), Winter, Blue, Violet
+   - Both dropdowns appear in the same row with "Colormaps" label
+   - State: `colormapPositive`, `colormapNegative`
+
+3. Updated initial volume configuration:
+   - Sets `cal_min: 0.001` and `cal_maxNeg: -0.001` by default to hide zero values
+
+4. Added useEffect for dynamically updating colormaps without reloading the volume
+
+#### NiivueMosaic.js (QC tab brain maps - T2*, S0, RMSE)
+1. Added **threshold slider** (0-100% range):
+   - Allows filtering of low-value voxels in QC maps
+   - Threshold is applied as percentage of max value / 200
+
+2. Added **colormap dropdown** with sequential colormaps:
+   - Options: Gray (default for T2*/S0), Hot (default for RMSE), Bone, Viridis, Plasma, Inferno, Magma, Cividis
+   - State: `selectedColormap` (null = use mapType default)
+
+3. Reset behavior on mapType change:
+   - Contrast resets to 50%
+   - Threshold resets to 0%
+   - Selected colormap resets to null (default)
+
+4. Preserved colormapInvert for RMSE maps regardless of colormap selection
+
+### Technical Details
+
+**BrainViewer threshold logic:**
+```javascript
+// Always use a minimum threshold (0.1% of max) to make zero values transparent
+const minThresholdPercent = 0.1;
+const thresholdVal = maxAbsRef.current * Math.max(minThresholdPercent, threshold) / 100;
+
+// Positive values: threshold to max
+vol.cal_min = thresholdVal;
+vol.cal_max = range;
+
+// Negative values: -max to -threshold
+vol.cal_minNeg = -range;
+vol.cal_maxNeg = -thresholdVal;
+```
+
+**NiivueMosaic threshold logic:**
+```javascript
+// Apply threshold (0-100% range, with minimum of 0.001)
+const thresholdVal = Math.max(0.001, maxValRef.current * (threshold / 200));
+vol.cal_min = thresholdVal;
+```
+
+### UI Layout
+- BrainViewer: Position → Saturation → Threshold → Colormaps (Positive | Negative)
+- NiivueMosaic: Position → Contrast → Threshold → Colormap
+
+### Files Modified
+- `src/Plots/BrainViewer.js` - Threshold slider, colormap dropdowns, zero-value transparency
+- `src/Diagnostics/NiivueMosaic.js` - Threshold slider, colormap dropdown, reset behavior
