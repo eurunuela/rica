@@ -1,8 +1,8 @@
 {
   "projectName": "rica",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "React-based interactive visualization tool for multi-echo fMRI ICA component analysis",
-  "lastUpdated": "2026-01-19",
+  "lastUpdated": "2026-02-02",
   "modernizationNotes": "v2.0.0 - Upgraded to React 18, functional components, removed 5s loading delay, added progress indicator, Notion-style popups",
   "features": [
     {
@@ -785,6 +785,44 @@
         "Verify visualization card height scales appropriately on larger screens (27\" monitors)"
       ],
       "passes": true
+    },
+    {
+      "id": "brain_map_threshold_slider",
+      "category": "interactivity",
+      "description": "Adjust brain map threshold to filter out low-magnitude voxels",
+      "steps": [
+        "Load a tedana folder containing NIfTI files",
+        "Navigate to the 'ICA' tab",
+        "Locate the Threshold slider below the Saturation slider",
+        "Drag threshold slider (0-50% range)",
+        "Verify low-magnitude voxels become transparent as threshold increases",
+        "Verify both positive and negative values are filtered symmetrically",
+        "Navigate to the 'QC' tab and select Brain Maps",
+        "Verify QC brain maps also have threshold slider (0-100% range)",
+        "Verify threshold filters low-value voxels in T2*, S0, and RMSE maps"
+      ],
+      "passes": false
+    },
+    {
+      "id": "brain_map_colormap_selection",
+      "category": "interactivity",
+      "description": "Select custom colormaps for brain map visualization",
+      "steps": [
+        "Load a tedana folder containing NIfTI files",
+        "Navigate to the 'ICA' tab",
+        "Locate the Colormaps dropdowns below the Threshold slider",
+        "Verify two dropdowns appear: positive (Warm default) and negative (Cool default)",
+        "Select different positive colormap (Hot, Red, Copper, Gold)",
+        "Verify brain map updates to show new colormap for positive values",
+        "Select different negative colormap (Winter, Blue, Violet)",
+        "Verify brain map updates to show new colormap for negative values",
+        "Navigate to the 'QC' tab and select Brain Maps",
+        "Verify QC brain maps have single colormap dropdown",
+        "Select different colormap (Viridis, Plasma, Inferno, etc.)",
+        "Verify T2*, S0 maps update colormap",
+        "Verify RMSE map maintains inverted colormap behavior"
+      ],
+      "passes": false
     }
   ]
 }
