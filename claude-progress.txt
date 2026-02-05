@@ -3,7 +3,7 @@
 ## Project Overview
 
 **Name**: rica (Reports for ICA)
-**Version**: 2.1.1
+**Version**: 2.1.3
 **Purpose**: React-based interactive visualization tool for multi-echo fMRI ICA component analysis from tedana/ME-ICA outputs.
 
 ### Main Libraries (v2.0.0)
@@ -2647,3 +2647,52 @@ vol.cal_min = thresholdVal;
 ### Files Modified
 - `src/Plots/BrainViewer.js` - Threshold slider, colormap dropdowns, zero-value transparency
 - `src/Diagnostics/NiivueMosaic.js` - Threshold slider, colormap dropdown, reset behavior
+
+---
+
+## Session - Support tedana --convention orig Filenames (2026-02-05)
+
+### Goals
+- Fix loading of tedana output generated with `--convention orig` flag
+- Resolve case-sensitivity issues in PCA/Orth/ICA filename filtering
+- Add orig convention filename patterns for file discovery
+
+### Root Cause
+When tedana runs with `--convention orig`, it produces files with different naming conventions (e.g., lowercase names like `betas_OC.nii.gz` instead of `desc-ICA_...`). Rica's file loading had two issues:
+
+1. **Case-sensitive string comparisons**: PCA and Orth exclusions used case-sensitive checks, so orig convention files (lowercase) slipped through filters and overwrote ICA data, producing garbled displays.
+2. **Missing orig convention patterns**: Five file types use completely different names in orig convention and were never found by Rica's pattern matching.
+
+### Changes Made
+
+#### src/PopUps/IntroPopUp.js
+1. Made all PCA/Orth/ICA string comparisons case-insensitive
+2. Added orig convention filename patterns:
+   - `betas_OC.nii.gz` (stat-z components equivalent)
+   - `t2svG.nii` (T2* map)
+   - `s0vG.nii.gz` (S0 map)
+   - `rmse.nii.gz` (RMSE map)
+   - `cross_component_metrics.json` (cross-component metrics)
+
+#### scripts/rica_server.py
+1. Added orig convention file patterns to `RICA_FILE_PATTERNS`
+2. Ensures server-side file discovery works with orig convention outputs
+
+### Files Modified
+- `src/PopUps/IntroPopUp.js` - Case-insensitive filtering, orig convention patterns
+- `scripts/rica_server.py` - Updated file patterns for orig convention
+
+### Build Status
+- Fixes ME-ICA/tedana#1349
+
+---
+
+## Release v2.1.3 (2026-02-05)
+
+### Release Notes
+Bug fix release supporting tedana `--convention orig` output.
+
+### Bug Fixes
+- **Fixed orig convention support**: Case-sensitive PCA/Orth exclusions caused orig convention files to slip through filters and overwrite ICA data
+- **Added orig convention file patterns**: betas_OC.nii.gz, t2svG.nii, s0vG.nii.gz, rmse.nii.gz, cross_component_metrics.json
+- **Updated server file patterns**: rica_server.py now discovers orig convention files

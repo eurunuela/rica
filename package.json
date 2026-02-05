@@ -1,6 +1,6 @@
 {
   "name": "rica",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "private": true,
   "engines": {
     "node": ">=18.0.0"

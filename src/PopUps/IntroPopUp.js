@@ -140,17 +140,22 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           f.includes("comp_") ||
           f.includes(".svg") ||
           f === "report.txt" ||
-          (f.includes("_metrics.tsv") && !f.includes("PCA")) ||
+          (f.includes("_metrics.tsv") && !f.toLowerCase().includes("pca")) ||
           (f.startsWith("tedana_20") && f.endsWith(".tsv")) ||
-          (f.includes("_mixing.tsv") && !f.includes("PCA") && !f.includes("Orth")) ||
-          (f.includes("stat-z_components.nii.gz") && f.includes("ICA")) ||
+          (f.includes("_mixing.tsv") && !f.toLowerCase().includes("pca") && !f.toLowerCase().includes("orth")) ||
+          (f.includes("stat-z_components.nii.gz") && f.toLowerCase().includes("ica")) ||
+          f === "betas_OC.nii.gz" ||
           f.includes("_mask.nii") ||
           f.includes("CrossComponent_metrics.json") ||
+          (f.includes("cross_component_metrics.json") && !f.toLowerCase().includes("pca")) ||
           f === "manual_classification.tsv" ||
           // QC NIfTI files
           f.includes("T2starmap.nii") ||
+          f.includes("t2svG.nii") ||
           f.includes("S0map.nii") ||
+          f === "s0vG.nii.gz" ||
           f.includes("rmse_statmap.nii") ||
+          f === "rmse.nii.gz" ||
           // Decision tree files
           f.includes("decision_tree.json") ||
           f.includes("status_table.tsv")
@@ -217,7 +222,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           }
 
           // Component metrics table
-          if (filename.includes("_metrics.tsv") && !filename.includes("PCA")) {
+          if (filename.includes("_metrics.tsv") && !filename.toLowerCase().includes("pca")) {
             const response = await fetch(`/${filepath}`);
             const text = await response.text();
             const parsed = Papa.parse(text, {
@@ -249,7 +254,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           }
 
           // ICA Mixing matrix (exclude PCA and Orth variants)
-          if (filename.includes("_mixing.tsv") && !filename.includes("PCA") && !filename.includes("Orth")) {
+          if (filename.includes("_mixing.tsv") && !filename.toLowerCase().includes("pca") && !filename.toLowerCase().includes("orth")) {
             const response = await fetch(`/${filepath}`);
             const text = await response.text();
             mixingMatrix = parseMixingMatrix(text);
@@ -257,7 +262,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           }
 
           // ICA stat-z components NIfTI
-          if (filename.includes("stat-z_components.nii.gz") && filename.includes("ICA")) {
+          if ((filename.includes("stat-z_components.nii.gz") && filename.toLowerCase().includes("ica")) || filename === "betas_OC.nii.gz") {
             const response = await fetch(`/${filepath}`);
             niftiBuffer = await response.arrayBuffer();
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
@@ -271,24 +276,25 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           }
 
           // Cross-component metrics (for elbow thresholds)
-          if (filename.includes("CrossComponent_metrics.json")) {
+          if (filename.includes("CrossComponent_metrics.json") ||
+              (filename.includes("cross_component_metrics.json") && !filename.toLowerCase().includes("pca"))) {
             const response = await fetch(`/${filepath}`);
             crossComponentMetrics = await response.json();
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
           // QC NIfTI files (T2*, S0, RMSE)
-          if (filename.includes("T2starmap.nii")) {
+          if (filename.includes("T2starmap.nii") || filename.includes("t2svG.nii")) {
             const response = await fetch(`/${filepath}`);
             qcNiftiBuffers.t2star = await response.arrayBuffer();
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
-          if (filename.includes("S0map.nii") && !filename.includes("limited")) {
+          if ((filename.includes("S0map.nii") && !filename.includes("limited")) || filename === "s0vG.nii.gz") {
             const response = await fetch(`/${filepath}`);
             qcNiftiBuffers.s0 = await response.arrayBuffer();
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
-          if (filename.includes("rmse_statmap.nii")) {
+          if (filename.includes("rmse_statmap.nii") || filename === "rmse.nii.gz") {
             const response = await fetch(`/${filepath}`);
             qcNiftiBuffers.rmse = await response.arrayBuffer();
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
@@ -398,18 +404,23 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           f.name.includes("comp_") ||
           f.name.includes(".svg") ||
           f.name === "report.txt" ||
-          (f.name.includes("_metrics.tsv") && !f.name.includes("PCA")) ||
+          (f.name.includes("_metrics.tsv") && !f.name.toLowerCase().includes("pca")) ||
           (f.name.startsWith("tedana_20") && f.name.endsWith(".tsv")) ||
           // New files for Niivue integration
-          (f.name.includes("_mixing.tsv") && !f.name.includes("PCA") && !f.name.includes("Orth")) ||
-          (f.name.includes("stat-z_components.nii.gz") && f.name.includes("ICA")) ||
+          (f.name.includes("_mixing.tsv") && !f.name.toLowerCase().includes("pca") && !f.name.toLowerCase().includes("orth")) ||
+          (f.name.includes("stat-z_components.nii.gz") && f.name.toLowerCase().includes("ica")) ||
+          f.name === "betas_OC.nii.gz" ||
           f.name.includes("_mask.nii") ||
           f.name.includes("CrossComponent_metrics.json") ||
+          (f.name.includes("cross_component_metrics.json") && !f.name.toLowerCase().includes("pca")) ||
           f.name === "manual_classification.tsv" ||
           // QC NIfTI files
           f.name.includes("T2starmap.nii") ||
+          f.name.includes("t2svG.nii") ||
           f.name.includes("S0map.nii") ||
+          f.name === "s0vG.nii.gz" ||
           f.name.includes("rmse_statmap.nii") ||
+          f.name === "rmse.nii.gz" ||
           // Decision tree files
           f.name.includes("decision_tree.json") ||
           f.name.includes("status_table.tsv")
@@ -471,7 +482,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           }
 
           // Component metrics table
-          if (filename.includes("_metrics.tsv") && !filename.includes("PCA")) {
+          if (filename.includes("_metrics.tsv") && !filename.toLowerCase().includes("pca")) {
             const text = await readFileAsText(file);
             const parsed = Papa.parse(text, {
               header: true,
@@ -502,14 +513,14 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           }
 
           // ICA Mixing matrix (time series data for Niivue, exclude PCA and Orth variants)
-          if (filename.includes("_mixing.tsv") && !filename.includes("PCA") && !filename.includes("Orth")) {
+          if (filename.includes("_mixing.tsv") && !filename.toLowerCase().includes("pca") && !filename.toLowerCase().includes("orth")) {
             const text = await readFileAsText(file);
             mixingMatrix = parseMixingMatrix(text);
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
           // ICA stat-z components NIfTI (4D brain maps for Niivue)
-          if (filename.includes("stat-z_components.nii.gz") && filename.includes("ICA")) {
+          if ((filename.includes("stat-z_components.nii.gz") && filename.toLowerCase().includes("ica")) || filename === "betas_OC.nii.gz") {
             niftiBuffer = await readFileAsArrayBuffer(file);
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
@@ -521,22 +532,23 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           }
 
           // Cross-component metrics (for elbow thresholds)
-          if (filename.includes("CrossComponent_metrics.json")) {
+          if (filename.includes("CrossComponent_metrics.json") ||
+              (filename.includes("cross_component_metrics.json") && !filename.toLowerCase().includes("pca"))) {
             const text = await readFileAsText(file);
             crossComponentMetrics = JSON.parse(text);
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
           // QC NIfTI files (T2*, S0, RMSE)
-          if (filename.includes("T2starmap.nii")) {
+          if (filename.includes("T2starmap.nii") || filename.includes("t2svG.nii")) {
             qcNiftiBuffers.t2star = await readFileAsArrayBuffer(file);
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
-          if (filename.includes("S0map.nii") && !filename.includes("limited")) {
+          if ((filename.includes("S0map.nii") && !filename.includes("limited")) || filename === "s0vG.nii.gz") {
             qcNiftiBuffers.s0 = await readFileAsArrayBuffer(file);
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
-          if (filename.includes("rmse_statmap.nii")) {
+          if (filename.includes("rmse_statmap.nii") || filename === "rmse.nii.gz") {
             qcNiftiBuffers.rmse = await readFileAsArrayBuffer(file);
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
