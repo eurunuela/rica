@@ -37,6 +37,12 @@ RICA_FILE_PATTERNS = [
     "T2starmap.nii",
     "S0map.nii",
     "rmse_statmap.nii",
+    # Orig convention files
+    "betas_OC.nii.gz",
+    "cross_component_metrics.json",
+    "t2svG.nii",
+    "s0vG.nii",
+    "rmse.nii",
     # Decision tree files
     "decision_tree.json",
     "status_table.tsv",
@@ -105,7 +111,7 @@ class RicaHandler(http.server.SimpleHTTPRequestHandler):
         try:
             msg = str(args[0]) if args else ""
             if "/api/files" in msg:
-                print(f"[Rica] File list requested")
+                print("[Rica] File list requested")
             elif "GET" in msg and len(args) > 1:
                 status = str(args[1])
                 # Only log errors (non-2xx responses)
