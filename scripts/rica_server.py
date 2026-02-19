@@ -26,7 +26,7 @@ from urllib.parse import unquote
 RICA_FILE_PATTERNS = [
     "_metrics.tsv",
     "_mixing.tsv",
-    "stat-z_components.nii.gz",
+    "_components.nii.gz",
     "_mask.nii",
     "report.txt",
     "comp_",
@@ -87,7 +87,9 @@ class RicaHandler(http.server.SimpleHTTPRequestHandler):
         for f in cwd.rglob("*"):
             if f.is_file():
                 # Check if file matches any Rica pattern
-                if any(pattern in f.name for pattern in RICA_FILE_PATTERNS):
+                if any(pattern in f.name for pattern in RICA_FILE_PATTERNS) and not (
+                    "_components.nii.gz" in f.name and "stat-z" in f.name
+                ):
                     # Store relative path with forward slashes
                     rel_path = str(f.relative_to(cwd)).replace("\\", "/")
                     files.append(rel_path)
@@ -137,7 +139,11 @@ def main():
     cwd = Path.cwd()
     rica_files = []
     for f in cwd.rglob("*"):
-        if f.is_file() and any(p in f.name for p in RICA_FILE_PATTERNS):
+        if (
+            f.is_file()
+            and any(p in f.name for p in RICA_FILE_PATTERNS)
+            and not ("_components.nii.gz" in f.name and "stat-z" in f.name)
+        ):
             rica_files.append(f.name)
 
     if not rica_files:
