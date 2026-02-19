@@ -143,7 +143,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           (f.includes("_metrics.tsv") && !f.toLowerCase().includes("pca")) ||
           (f.startsWith("tedana_20") && f.endsWith(".tsv")) ||
           (f.includes("_mixing.tsv") && !f.toLowerCase().includes("pca") && !f.toLowerCase().includes("orth")) ||
-          (f.includes("stat-z_components.nii.gz") && f.toLowerCase().includes("ica")) ||
+          (f.includes("_components.nii.gz") && f.toLowerCase().includes("ica") && !f.includes("stat-z")) ||
           f === "betas_OC.nii.gz" ||
           f.includes("_mask.nii") ||
           f.includes("CrossComponent_metrics.json") ||
@@ -261,8 +261,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
-          // ICA stat-z components NIfTI
-          if ((filename.includes("stat-z_components.nii.gz") && filename.toLowerCase().includes("ica")) || filename === "betas_OC.nii.gz") {
+          // ICA components NIfTI
+          if ((filename.includes("_components.nii.gz") && filename.toLowerCase().includes("ica") && !filename.includes("stat-z")) || filename === "betas_OC.nii.gz") {
             const response = await fetch(`/${filepath}`);
             niftiBuffer = await response.arrayBuffer();
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
@@ -408,7 +408,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           (f.name.startsWith("tedana_20") && f.name.endsWith(".tsv")) ||
           // New files for Niivue integration
           (f.name.includes("_mixing.tsv") && !f.name.toLowerCase().includes("pca") && !f.name.toLowerCase().includes("orth")) ||
-          (f.name.includes("stat-z_components.nii.gz") && f.name.toLowerCase().includes("ica")) ||
+          (f.name.includes("_components.nii.gz") && f.name.toLowerCase().includes("ica") && !f.name.includes("stat-z")) ||
           f.name === "betas_OC.nii.gz" ||
           f.name.includes("_mask.nii") ||
           f.name.includes("CrossComponent_metrics.json") ||
@@ -519,8 +519,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
-          // ICA stat-z components NIfTI (4D brain maps for Niivue)
-          if ((filename.includes("stat-z_components.nii.gz") && filename.toLowerCase().includes("ica")) || filename === "betas_OC.nii.gz") {
+          // ICA components NIfTI (4D brain maps for Niivue)
+          if ((filename.includes("_components.nii.gz") && filename.toLowerCase().includes("ica") && !filename.includes("stat-z")) || filename === "betas_OC.nii.gz") {
             niftiBuffer = await readFileAsArrayBuffer(file);
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }

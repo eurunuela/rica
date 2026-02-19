@@ -288,7 +288,7 @@
       "category": "visualization",
       "description": "Display interactive brain stat map mosaic using Niivue for selected ICA component",
       "steps": [
-        "Load a tedana folder containing *stat-z_components.nii.gz",
+        "Load a tedana folder containing *_components.nii.gz",
         "Navigate to the 'ICA' tab",
         "Verify brain viewer displays 3 rows of slices (axial, sagittal, coronal) with 7 slices per row",
         "Verify warm/cool diverging colormap is applied (warm for positive, cool for negative)",
