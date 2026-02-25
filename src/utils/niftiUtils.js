@@ -51,8 +51,8 @@ async function decompressHeader(gzBuffer) {
     const writer = ds.writable.getWriter();
     const reader = ds.readable.getReader();
 
-    writer.write(new Uint8Array(gzBuffer));
-    writer.close();
+    await writer.write(new Uint8Array(gzBuffer));
+    await writer.close();
 
     // Read enough bytes for the largest NIfTI header (540 bytes for NIfTI-2)
     const chunks = [];

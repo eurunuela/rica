@@ -23,21 +23,33 @@ export function computePowerSpectrum(timeSeries, tr = 1) {
   const frequencies = [];
   const power = [];
 
-  // Direct DFT for positive frequencies only (equivalent to numpy.fft.rfft)
+  // Direct DFT for positive frequencies only (equivalent to numpy.fft.rfft).
+  // Uses trig recurrence to avoid per-sample Math.sin/Math.cos calls.
   for (let k = 0; k < numBins; k++) {
     let re = 0;
     let im = 0;
     const angle = (-2 * Math.PI * k) / N;
+    const cosTheta = Math.cos(angle);
+    const sinTheta = Math.sin(angle);
+    let cosN = 1; // cos(0)
+    let sinN = 0; // sin(0)
     for (let n = 0; n < N; n++) {
-      re += timeSeries[n] * Math.cos(angle * n);
-      im += timeSeries[n] * Math.sin(angle * n);
+      const value = timeSeries[n];
+      re += value * cosN;
+      im += value * sinN;
+      const nextCosN = cosN * cosTheta - sinN * sinTheta;
+      const nextSinN = sinN * cosTheta + cosN * sinTheta;
+      cosN = nextCosN;
+      sinN = nextSinN;
     }
 
     // |FFT(data)|^2 (matches np.abs(np.fft.rfft(data)) ** 2)
     power.push(re * re + im * im);
 
     // Frequency bins matching tedana's: np.fft.rfftfreq(ps.size * 2 - 1, tr)
-    // For even N this uses N+1, for odd N this uses N (replicates tedana exactly)
+    // For even N this uses numBins*2-1 = N+1 as denominator instead of N,
+    // so the highest bin is slightly below true Nyquist. This intentionally
+    // replicates tedana's behavior to match the static figures exactly.
     frequencies.push(k / ((numBins * 2 - 1) * tr));
   }
 
