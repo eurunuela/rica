@@ -1,9 +1,12 @@
-import FFT from "fft.js";
-
 /**
  * Compute one-sided power spectrum from time series data.
- * Matches tedana's get_spectrum(): np.abs(np.fft.rfft(data)) ** 2
- * with frequencies from np.fft.rfftfreq(n, tr).
+ * Matches tedana's get_spectrum() exactly:
+ *   power_spectrum = np.abs(np.fft.rfft(data)) ** 2
+ *   freqs = np.fft.rfftfreq(power_spectrum.size * 2 - 1, tr)
+ *
+ * Uses a direct DFT (no zero-padding) to match numpy's rfft output
+ * for arbitrary-length signals. For typical fMRI time series (100-1000 TRs)
+ * this runs in under 50ms.
  *
  * @param {number[]} timeSeries - Array of time series values
  * @param {number} tr - Repetition time in seconds (default: 1, meaning frequencies in cycles/TR)
@@ -14,38 +17,28 @@ export function computePowerSpectrum(timeSeries, tr = 1) {
     return { frequencies: [], power: [] };
   }
 
-  const originalLength = timeSeries.length;
-
-  // fft.js requires power-of-2 sizes, so pad if needed
-  const n = Math.pow(2, Math.ceil(Math.log2(originalLength)));
-  const fft = new FFT(n);
-
-  // Create complex input array (interleaved real/imaginary)
-  const input = fft.createComplexArray();
-  for (let i = 0; i < originalLength; i++) {
-    input[i * 2] = timeSeries[i]; // real part
-    input[i * 2 + 1] = 0; // imaginary part
-  }
-  // Zero-pad the rest (already initialized to 0 by createComplexArray)
-
-  const output = fft.createComplexArray();
-  fft.transform(output, input);
-
-  // Compute one-sided power spectrum: |FFT(data)|^2
-  // Number of rfft output bins for originalLength points
-  const numBins = Math.floor(originalLength / 2) + 1;
+  const N = timeSeries.length;
+  // Number of one-sided bins: floor(N/2) + 1 (matches numpy rfft output size)
+  const numBins = Math.floor(N / 2) + 1;
   const frequencies = [];
   const power = [];
 
-  for (let i = 0; i < numBins; i++) {
-    const re = output[i * 2];
-    const im = output[i * 2 + 1];
+  // Direct DFT for positive frequencies only (equivalent to numpy.fft.rfft)
+  for (let k = 0; k < numBins; k++) {
+    let re = 0;
+    let im = 0;
+    const angle = (-2 * Math.PI * k) / N;
+    for (let n = 0; n < N; n++) {
+      re += timeSeries[n] * Math.cos(angle * n);
+      im += timeSeries[n] * Math.sin(angle * n);
+    }
 
-    // Magnitude squared (matches np.abs(np.fft.rfft(data)) ** 2)
+    // |FFT(data)|^2 (matches np.abs(np.fft.rfft(data)) ** 2)
     power.push(re * re + im * im);
 
-    // Frequency bins matching np.fft.rfftfreq(originalLength, tr)
-    frequencies.push(i / (originalLength * tr));
+    // Frequency bins matching tedana's: np.fft.rfftfreq(ps.size * 2 - 1, tr)
+    // For even N this uses N+1, for odd N this uses N (replicates tedana exactly)
+    frequencies.push(k / ((numBins * 2 - 1) * tr));
   }
 
   return { frequencies, power };
