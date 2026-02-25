@@ -283,7 +283,7 @@ function FFTSpectrum({
                     fontSize: 10,
                     textAnchor: "middle",
                   })}
-                  label="Frequency (cycles/TR)"
+                  label={sampleRate !== 1 ? "Frequency (Hz)" : "Frequency (cycles/TR)"}
                   labelProps={{
                     fill: colors.axisLabel,
                     fontSize: 11,
@@ -425,7 +425,7 @@ function FFTSpectrum({
           }}
         >
           <div>
-            <strong>Freq: {tooltipData.x.toFixed(4)}</strong>
+            <strong>Freq: {tooltipData.x.toFixed(4)} {sampleRate !== 1 ? "Hz" : "cycles/TR"}</strong>
           </div>
           <div>Power: {tooltipData.y.toExponential(2)}</div>
         </TooltipInPortal>

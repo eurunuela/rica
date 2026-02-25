@@ -158,7 +158,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           f === "rmse.nii.gz" ||
           // Decision tree files
           f.includes("decision_tree.json") ||
-          f.includes("status_table.tsv")
+          f.includes("status_table.tsv") ||
+          f.includes("registry.json")
       );
 
       setLoadingProgress({ current: 0, total: relevantFiles.length });
@@ -183,6 +184,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       // Decision tree data
       let decisionTreeData = null;
       let statusTableData = null;
+      // Repetition time from registry
+      let repetitionTime = null;
 
       // Process files via HTTP fetch
       for (const filepath of relevantFiles) {
@@ -332,6 +335,17 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             console.log("[Rica] Loaded status table with", statusTableData?.length || 0, "components");
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
+
+          // Registry JSON (for RepetitionTime)
+          if (filename.includes("registry.json")) {
+            const response = await fetch(`/${filepath}`);
+            const registry = await response.json();
+            if (registry?.RepetitionTime != null) {
+              repetitionTime = registry.RepetitionTime;
+              console.log("[Rica] Loaded RepetitionTime from registry:", repetitionTime);
+            }
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
         } catch (error) {
           console.error(`Error fetching file ${filepath}:`, error);
         }
@@ -364,6 +378,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         // Decision tree data
         decisionTreeData,
         statusTableData,
+        repetitionTime,
       });
     },
     [onDataLoad, onLoadingStart]
@@ -423,7 +438,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           f.name === "rmse.nii.gz" ||
           // Decision tree files
           f.name.includes("decision_tree.json") ||
-          f.name.includes("status_table.tsv")
+          f.name.includes("status_table.tsv") ||
+          f.name.includes("registry.json")
       ).length;
 
       setLoadingProgress({ current: 0, total: totalFiles });
@@ -448,6 +464,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       // Decision tree data
       let decisionTreeData = null;
       let statusTableData = null;
+      // Repetition time from registry
+      let repetitionTime = null;
 
       // Process all files in parallel using Promise.all
       const filePromises = files.map(async (file) => {
@@ -582,6 +600,17 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             console.log("[Rica] Loaded status table with", statusTableData?.length || 0, "components");
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
+
+          // Registry JSON (for RepetitionTime)
+          if (filename.includes("registry.json")) {
+            const text = await readFileAsText(file);
+            const registry = JSON.parse(text);
+            if (registry?.RepetitionTime != null) {
+              repetitionTime = registry.RepetitionTime;
+              console.log("[Rica] Loaded RepetitionTime from registry:", repetitionTime);
+            }
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
         } catch (error) {
           console.error(`Error reading file ${filename}:`, error);
         }
@@ -618,6 +647,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         // Decision tree data
         decisionTreeData,
         statusTableData,
+        repetitionTime,
       });
     },
     [onDataLoad, onLoadingStart]
