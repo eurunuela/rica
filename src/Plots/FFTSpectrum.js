@@ -25,7 +25,7 @@ function FFTSpectrum({
   width,
   height,
   title,
-  sampleRate = 1,
+  tr = 1,
   lineColor = "#10b981",
   isDark = false,
 }) {
@@ -64,8 +64,8 @@ function FFTSpectrum({
   // Compute FFT power spectrum (memoized for performance)
   const spectrumData = useMemo(() => {
     if (!timeSeries?.length) return { frequencies: [], power: [] };
-    return computePowerSpectrum(timeSeries, sampleRate);
-  }, [timeSeries, sampleRate]);
+    return computePowerSpectrum(timeSeries, tr);
+  }, [timeSeries, tr]);
 
   // Convert to points for plotting
   const points = useMemo(() => {
@@ -283,7 +283,7 @@ function FFTSpectrum({
                     fontSize: 10,
                     textAnchor: "middle",
                   })}
-                  label={sampleRate !== 1 ? "Frequency (Hz)" : "Frequency (cycles/TR)"}
+                  label={tr !== 1 ? "Frequency (Hz)" : "Frequency (cycles/TR)"}
                   labelProps={{
                     fill: colors.axisLabel,
                     fontSize: 11,
@@ -425,7 +425,7 @@ function FFTSpectrum({
           }}
         >
           <div>
-            <strong>Freq: {tooltipData.x.toFixed(4)} {sampleRate !== 1 ? "Hz" : "cycles/TR"}</strong>
+            <strong>Freq: {tooltipData.x.toFixed(4)} {tr !== 1 ? "Hz" : "cycles/TR"}</strong>
           </div>
           <div>Power: {tooltipData.y.toExponential(2)}</div>
         </TooltipInPortal>

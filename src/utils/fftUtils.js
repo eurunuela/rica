@@ -1,19 +1,22 @@
 import FFT from "fft.js";
 
 /**
- * Compute one-sided power spectrum from time series data
+ * Compute one-sided power spectrum from time series data.
+ * Matches tedana's get_spectrum(): np.abs(np.fft.rfft(data)) ** 2
+ * with frequencies from np.fft.rfftfreq(n, tr).
  *
  * @param {number[]} timeSeries - Array of time series values
- * @param {number} sampleRate - Sample rate in Hz (default: 1, meaning frequencies in cycles/TR)
+ * @param {number} tr - Repetition time in seconds (default: 1, meaning frequencies in cycles/TR)
  * @returns {{ frequencies: number[], power: number[] }} - Frequency bins and power values
  */
-export function computePowerSpectrum(timeSeries, sampleRate = 1) {
+export function computePowerSpectrum(timeSeries, tr = 1) {
   if (!timeSeries || timeSeries.length === 0) {
     return { frequencies: [], power: [] };
   }
 
-  // Pad to next power of 2 for FFT efficiency
   const originalLength = timeSeries.length;
+
+  // fft.js requires power-of-2 sizes, so pad if needed
   const n = Math.pow(2, Math.ceil(Math.log2(originalLength)));
   const fft = new FFT(n);
 
@@ -28,26 +31,21 @@ export function computePowerSpectrum(timeSeries, sampleRate = 1) {
   const output = fft.createComplexArray();
   fft.transform(output, input);
 
-  // Compute one-sided power spectrum (only positive frequencies)
-  const nyquist = Math.floor(n / 2) + 1;
+  // Compute one-sided power spectrum: |FFT(data)|^2
+  // Number of rfft output bins for originalLength points
+  const numBins = Math.floor(originalLength / 2) + 1;
   const frequencies = [];
   const power = [];
 
-  for (let i = 0; i < nyquist; i++) {
+  for (let i = 0; i < numBins; i++) {
     const re = output[i * 2];
     const im = output[i * 2 + 1];
 
-    // Magnitude squared (power)
-    let p = (re * re + im * im) / (n * n);
+    // Magnitude squared (matches np.abs(np.fft.rfft(data)) ** 2)
+    power.push(re * re + im * im);
 
-    // Double the power for all frequencies except DC and Nyquist
-    // (to account for the discarded negative frequencies)
-    if (i > 0 && i < nyquist - 1) {
-      p *= 2;
-    }
-
-    frequencies.push((i * sampleRate) / n);
-    power.push(p);
+    // Frequency bins matching np.fft.rfftfreq(originalLength, tr)
+    frequencies.push(i / (originalLength * tr));
   }
 
   return { frequencies, power };

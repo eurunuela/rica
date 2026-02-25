@@ -564,7 +564,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
                   width={750}
                   height={150}
                   title="Power Spectrum"
-                  sampleRate={repetitionTime ? 1 / repetitionTime : 1}
+                  tr={repetitionTime || 1}
                   lineColor={selectedClassification === 'accepted' ? getColors(isDark).acceptedHover : getColors(isDark).rejectedHover}
                   isDark={isDark}
                 />
