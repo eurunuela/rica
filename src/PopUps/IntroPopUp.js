@@ -338,11 +338,18 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
 
           // Registry JSON (for RepetitionTime)
           if (filename.includes("registry.json")) {
-            const response = await fetch(`/${filepath}`);
-            const registry = await response.json();
-            if (registry?.RepetitionTime != null) {
-              repetitionTime = registry.RepetitionTime;
-              console.log("[Rica] Loaded RepetitionTime from registry:", repetitionTime);
+            try {
+              const response = await fetch(`/${filepath}`);
+              if (response.ok) {
+                const registry = await response.json();
+                const rt = registry?.RepetitionTime;
+                if (typeof rt === "number" && Number.isFinite(rt) && rt > 0) {
+                  repetitionTime = rt;
+                  console.log("[Rica] Loaded RepetitionTime from registry:", repetitionTime);
+                }
+              }
+            } catch (registryError) {
+              console.error(`Error loading registry ${filepath}:`, registryError);
             }
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
@@ -603,11 +610,16 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
 
           // Registry JSON (for RepetitionTime)
           if (filename.includes("registry.json")) {
-            const text = await readFileAsText(file);
-            const registry = JSON.parse(text);
-            if (registry?.RepetitionTime != null) {
-              repetitionTime = registry.RepetitionTime;
-              console.log("[Rica] Loaded RepetitionTime from registry:", repetitionTime);
+            try {
+              const text = await readFileAsText(file);
+              const registry = JSON.parse(text);
+              const rt = registry?.RepetitionTime;
+              if (typeof rt === "number" && Number.isFinite(rt) && rt > 0) {
+                repetitionTime = rt;
+                console.log("[Rica] Loaded RepetitionTime from registry:", repetitionTime);
+              }
+            } catch (registryError) {
+              console.error(`Error parsing registry.json:`, registryError);
             }
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
