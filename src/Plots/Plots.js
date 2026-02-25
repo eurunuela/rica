@@ -30,7 +30,7 @@ const getColors = (isDark) => ({
 });
 
 
-function Plots({ componentData, componentFigures, originalData, mixingMatrix, niftiBuffer, maskBuffer, crossComponentMetrics, externalRegressorsFigure, isDark = false }) {
+function Plots({ componentData, componentFigures, originalData, mixingMatrix, niftiBuffer, maskBuffer, crossComponentMetrics, externalRegressorsFigure, repetitionTime, isDark = false }) {
   const [processedData, setProcessedData] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedClassification, setSelectedClassification] = useState("accepted");
@@ -564,7 +564,8 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
                   width={750}
                   height={150}
                   title="Power Spectrum"
-                  sampleRate={1}
+                  tr={repetitionTime != null && repetitionTime > 0 ? repetitionTime : 1}
+                  showHz={repetitionTime != null && repetitionTime > 0}
                   lineColor={selectedClassification === 'accepted' ? getColors(isDark).acceptedHover : getColors(isDark).rejectedHover}
                   isDark={isDark}
                 />

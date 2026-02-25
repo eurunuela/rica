@@ -1,53 +1,56 @@
-import FFT from "fft.js";
-
 /**
- * Compute one-sided power spectrum from time series data
+ * Compute one-sided power spectrum from time series data.
+ * Matches tedana's get_spectrum() exactly:
+ *   power_spectrum = np.abs(np.fft.rfft(data)) ** 2
+ *   freqs = np.fft.rfftfreq(power_spectrum.size * 2 - 1, tr)
+ *
+ * Uses a direct DFT (no zero-padding) to match numpy's rfft output
+ * for arbitrary-length signals. For typical fMRI time series (100-1000 TRs)
+ * this runs in under 50ms.
  *
  * @param {number[]} timeSeries - Array of time series values
- * @param {number} sampleRate - Sample rate in Hz (default: 1, meaning frequencies in cycles/TR)
+ * @param {number} tr - Repetition time in seconds (default: 1, meaning frequencies in cycles/TR)
  * @returns {{ frequencies: number[], power: number[] }} - Frequency bins and power values
  */
-export function computePowerSpectrum(timeSeries, sampleRate = 1) {
+export function computePowerSpectrum(timeSeries, tr = 1) {
   if (!timeSeries || timeSeries.length === 0) {
     return { frequencies: [], power: [] };
   }
 
-  // Pad to next power of 2 for FFT efficiency
-  const originalLength = timeSeries.length;
-  const n = Math.pow(2, Math.ceil(Math.log2(originalLength)));
-  const fft = new FFT(n);
-
-  // Create complex input array (interleaved real/imaginary)
-  const input = fft.createComplexArray();
-  for (let i = 0; i < originalLength; i++) {
-    input[i * 2] = timeSeries[i]; // real part
-    input[i * 2 + 1] = 0; // imaginary part
-  }
-  // Zero-pad the rest (already initialized to 0 by createComplexArray)
-
-  const output = fft.createComplexArray();
-  fft.transform(output, input);
-
-  // Compute one-sided power spectrum (only positive frequencies)
-  const nyquist = Math.floor(n / 2) + 1;
+  const N = timeSeries.length;
+  // Number of one-sided bins: floor(N/2) + 1 (matches numpy rfft output size)
+  const numBins = Math.floor(N / 2) + 1;
   const frequencies = [];
   const power = [];
 
-  for (let i = 0; i < nyquist; i++) {
-    const re = output[i * 2];
-    const im = output[i * 2 + 1];
-
-    // Magnitude squared (power)
-    let p = (re * re + im * im) / (n * n);
-
-    // Double the power for all frequencies except DC and Nyquist
-    // (to account for the discarded negative frequencies)
-    if (i > 0 && i < nyquist - 1) {
-      p *= 2;
+  // Direct DFT for positive frequencies only (equivalent to numpy.fft.rfft).
+  // Uses trig recurrence to avoid per-sample Math.sin/Math.cos calls.
+  for (let k = 0; k < numBins; k++) {
+    let re = 0;
+    let im = 0;
+    const angle = (-2 * Math.PI * k) / N;
+    const cosTheta = Math.cos(angle);
+    const sinTheta = Math.sin(angle);
+    let cosN = 1; // cos(0)
+    let sinN = 0; // sin(0)
+    for (let n = 0; n < N; n++) {
+      const value = timeSeries[n];
+      re += value * cosN;
+      im += value * sinN;
+      const nextCosN = cosN * cosTheta - sinN * sinTheta;
+      const nextSinN = sinN * cosTheta + cosN * sinTheta;
+      cosN = nextCosN;
+      sinN = nextSinN;
     }
 
-    frequencies.push((i * sampleRate) / n);
-    power.push(p);
+    // |FFT(data)|^2 (matches np.abs(np.fft.rfft(data)) ** 2)
+    power.push(re * re + im * im);
+
+    // Frequency bins matching tedana's: np.fft.rfftfreq(ps.size * 2 - 1, tr)
+    // For even N this uses numBins*2-1 = N+1 as denominator instead of N,
+    // so the highest bin is slightly below true Nyquist. This intentionally
+    // replicates tedana's behavior to match the static figures exactly.
+    frequencies.push(k / ((numBins * 2 - 1) * tr));
   }
 
   return { frequencies, power };

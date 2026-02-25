@@ -71,6 +71,8 @@ function App() {
   // Decision tree data
   const [decisionTreeData, setDecisionTreeData] = useState(null);
   const [statusTableData, setStatusTableData] = useState(null);
+  // Repetition time from registry
+  const [repetitionTime, setRepetitionTime] = useState(null);
   // Theme state
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('rica-theme');
@@ -185,6 +187,7 @@ function App() {
       // Decision tree data
       setDecisionTreeData(data.decisionTreeData);
       setStatusTableData(data.statusTableData);
+      setRepetitionTime(data.repetitionTime);
       setIsLoading(false);
       toggleIntroPopup();
       
@@ -454,6 +457,7 @@ function App() {
                     maskBuffer={maskBuffer}
                     crossComponentMetrics={crossComponentMetrics}
                     externalRegressorsFigure={externalRegressorsFigure}
+                    repetitionTime={repetitionTime}
                     isDark={isDark}
                   />
                 </TabPanel>

@@ -3,6 +3,7 @@ import Papa from "papaparse";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFolder } from "@fortawesome/free-solid-svg-icons";
 import { parseMixingMatrix } from "../utils/tsvParser";
+import { extractTRFromNifti } from "../utils/niftiUtils";
 import { LOGO_DATA_URL } from "../constants/logo";
 import { VERSION_DISPLAY } from "../constants/version";
 
@@ -158,7 +159,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           f === "rmse.nii.gz" ||
           // Decision tree files
           f.includes("decision_tree.json") ||
-          f.includes("status_table.tsv")
+          f.includes("status_table.tsv") ||
+          f.includes("registry.json")
       );
 
       setLoadingProgress({ current: 0, total: relevantFiles.length });
@@ -183,6 +185,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       // Decision tree data
       let decisionTreeData = null;
       let statusTableData = null;
+      // Repetition time from registry
+      let repetitionTime = null;
 
       // Process files via HTTP fetch
       for (const filepath of relevantFiles) {
@@ -265,6 +269,14 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           if ((filename.includes("_components.nii.gz") && filename.toLowerCase().includes("ica") && !filename.includes("stat-z")) || filename === "betas_OC.nii.gz") {
             const response = await fetch(`/${filepath}`);
             niftiBuffer = await response.arrayBuffer();
+            // Extract TR from NIfTI header (same as tedana's get_zooms()[-1])
+            if (!repetitionTime) {
+              const tr = await extractTRFromNifti(niftiBuffer);
+              if (tr) {
+                repetitionTime = tr;
+                console.log("[Rica] Extracted RepetitionTime from NIfTI header:", repetitionTime);
+              }
+            }
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
@@ -332,6 +344,24 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             console.log("[Rica] Loaded status table with", statusTableData?.length || 0, "components");
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
+
+          // Registry JSON (for RepetitionTime)
+          if (filename.includes("registry.json")) {
+            try {
+              const response = await fetch(`/${filepath}`);
+              if (response.ok) {
+                const registry = await response.json();
+                const rt = registry?.RepetitionTime;
+                if (typeof rt === "number" && Number.isFinite(rt) && rt > 0) {
+                  repetitionTime = rt;
+                  console.log("[Rica] Loaded RepetitionTime from registry:", repetitionTime);
+                }
+              }
+            } catch (registryError) {
+              console.error(`Error loading registry ${filepath}:`, registryError);
+            }
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
         } catch (error) {
           console.error(`Error fetching file ${filepath}:`, error);
         }
@@ -364,6 +394,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         // Decision tree data
         decisionTreeData,
         statusTableData,
+        repetitionTime,
       });
     },
     [onDataLoad, onLoadingStart]
@@ -423,7 +454,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           f.name === "rmse.nii.gz" ||
           // Decision tree files
           f.name.includes("decision_tree.json") ||
-          f.name.includes("status_table.tsv")
+          f.name.includes("status_table.tsv") ||
+          f.name.includes("registry.json")
       ).length;
 
       setLoadingProgress({ current: 0, total: totalFiles });
@@ -448,6 +480,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       // Decision tree data
       let decisionTreeData = null;
       let statusTableData = null;
+      // Repetition time from registry
+      let repetitionTime = null;
 
       // Process all files in parallel using Promise.all
       const filePromises = files.map(async (file) => {
@@ -522,6 +556,14 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           // ICA components NIfTI (4D brain maps for Niivue)
           if ((filename.includes("_components.nii.gz") && filename.toLowerCase().includes("ica") && !filename.includes("stat-z")) || filename === "betas_OC.nii.gz") {
             niftiBuffer = await readFileAsArrayBuffer(file);
+            // Extract TR from NIfTI header (same as tedana's get_zooms()[-1])
+            if (!repetitionTime) {
+              const tr = await extractTRFromNifti(niftiBuffer);
+              if (tr) {
+                repetitionTime = tr;
+                console.log("[Rica] Extracted RepetitionTime from NIfTI header:", repetitionTime);
+              }
+            }
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
@@ -582,6 +624,22 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             console.log("[Rica] Loaded status table with", statusTableData?.length || 0, "components");
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
+
+          // Registry JSON (for RepetitionTime)
+          if (filename.includes("registry.json")) {
+            try {
+              const text = await readFileAsText(file);
+              const registry = JSON.parse(text);
+              const rt = registry?.RepetitionTime;
+              if (typeof rt === "number" && Number.isFinite(rt) && rt > 0) {
+                repetitionTime = rt;
+                console.log("[Rica] Loaded RepetitionTime from registry:", repetitionTime);
+              }
+            } catch (registryError) {
+              console.error(`Error parsing registry.json:`, registryError);
+            }
+            setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+          }
         } catch (error) {
           console.error(`Error reading file ${filename}:`, error);
         }
@@ -618,6 +676,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         // Decision tree data
         decisionTreeData,
         statusTableData,
+        repetitionTime,
       });
     },
     [onDataLoad, onLoadingStart]
