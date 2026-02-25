@@ -3,6 +3,7 @@ import Papa from "papaparse";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFolder } from "@fortawesome/free-solid-svg-icons";
 import { parseMixingMatrix } from "../utils/tsvParser";
+import { extractTRFromNifti } from "../utils/niftiUtils";
 import { LOGO_DATA_URL } from "../constants/logo";
 import { VERSION_DISPLAY } from "../constants/version";
 
@@ -268,6 +269,14 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           if ((filename.includes("_components.nii.gz") && filename.toLowerCase().includes("ica") && !filename.includes("stat-z")) || filename === "betas_OC.nii.gz") {
             const response = await fetch(`/${filepath}`);
             niftiBuffer = await response.arrayBuffer();
+            // Extract TR from NIfTI header (same as tedana's get_zooms()[-1])
+            if (!repetitionTime) {
+              const tr = await extractTRFromNifti(niftiBuffer);
+              if (tr) {
+                repetitionTime = tr;
+                console.log("[Rica] Extracted RepetitionTime from NIfTI header:", repetitionTime);
+              }
+            }
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
@@ -547,6 +556,14 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           // ICA components NIfTI (4D brain maps for Niivue)
           if ((filename.includes("_components.nii.gz") && filename.toLowerCase().includes("ica") && !filename.includes("stat-z")) || filename === "betas_OC.nii.gz") {
             niftiBuffer = await readFileAsArrayBuffer(file);
+            // Extract TR from NIfTI header (same as tedana's get_zooms()[-1])
+            if (!repetitionTime) {
+              const tr = await extractTRFromNifti(niftiBuffer);
+              if (tr) {
+                repetitionTime = tr;
+                console.log("[Rica] Extracted RepetitionTime from NIfTI header:", repetitionTime);
+              }
+            }
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
