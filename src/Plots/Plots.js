@@ -30,7 +30,7 @@ const getColors = (isDark) => ({
 });
 
 
-function Plots({ componentData, componentFigures, originalData, mixingMatrix, niftiBuffer, maskBuffer, crossComponentMetrics, externalRegressorsFigure, repetitionTime, isDark = false }) {
+function Plots({ componentData, componentFigures, originalData, mixingMatrix, niftiBuffer, niftiUrl, maskBuffer, crossComponentMetrics, externalRegressorsFigure, repetitionTime, isDark = false }) {
   const [processedData, setProcessedData] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedClassification, setSelectedClassification] = useState("accepted");
@@ -73,7 +73,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
   }, [isTableCollapsed]);
 
   // Check if we have the new interactive visualization data
-  const hasInteractiveViews = mixingMatrix?.data && niftiBuffer;
+  const hasInteractiveViews = mixingMatrix?.data && (niftiBuffer || niftiUrl);
 
   // Extract elbow thresholds from cross-component metrics (if available)
   const kappaElbow = crossComponentMetrics?.kappa_allcomps_elbow;
@@ -548,6 +548,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
               <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
                 <BrainViewer
                   niftiBuffer={niftiBuffer}
+                  niftiUrl={niftiUrl}
                   maskBuffer={maskBuffer}
                   componentIndex={selectedIndex}
                   width={750}

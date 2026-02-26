@@ -174,7 +174,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       let originalData = [];
       let dirPath = basePath || "";
       let mixingMatrix = null;
-      let niftiBuffer = null;
+      let niftiUrl = null;   // URL for direct Niivue loading (avoids ArrayBuffer copy)
       let maskBuffer = null;
       let crossComponentMetrics = null;
       // QC NIfTI buffers
@@ -284,19 +284,13 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
                   }
                 }
               } catch {
-                // Range requests not supported; TR will be extracted from full buffer below
+                // Range requests not supported; TR won't be extracted from header
               }
             }
-            const response = await fetch(`/${filepath}`);
-            niftiBuffer = await response.arrayBuffer();
-            // Fallback: extract TR from full buffer if Range request didn't work
-            if (!repetitionTime) {
-              const tr = await extractTRFromNifti(niftiBuffer);
-              if (tr) {
-                repetitionTime = tr;
-                console.log("[Rica] Extracted RepetitionTime from NIfTI header:", repetitionTime);
-              }
-            }
+            // Store the URL for direct loading by Niivue — avoids pulling the full
+            // (potentially hundreds of MB) file into the JS heap as an ArrayBuffer.
+            niftiUrl = `/${filepath}`;
+            console.log("[Rica] NIfTI URL set for direct Niivue loading:", niftiUrl);
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
@@ -407,7 +401,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         originalData: [originalData],
         dirPath,
         mixingMatrix,
-        niftiBuffer,
+        niftiUrl,
         maskBuffer,
         crossComponentMetrics,
         qcNiftiBuffers,
@@ -490,7 +484,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       let originalData = [];
       let dirPath = "";
       let mixingMatrix = null;
-      let niftiBuffer = null;
+      let niftiUrl = null;   // Blob URL for direct Niivue loading (avoids ArrayBuffer copy)
       let maskBuffer = null;
       let crossComponentMetrics = null;
       // QC NIfTI buffers
@@ -587,7 +581,10 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
                 console.log("[Rica] Extracted RepetitionTime from NIfTI header (4KB slice):", repetitionTime);
               }
             }
-            niftiBuffer = await readFileAsArrayBuffer(file);
+            // Create a blob URL from the File object — Niivue loads from this URL
+            // directly without pulling the whole file into the JS heap as an ArrayBuffer.
+            niftiUrl = URL.createObjectURL(file);
+            console.log("[Rica] NIfTI blob URL created for direct Niivue loading");
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
@@ -693,7 +690,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         dirPath,
         // New data for Niivue integration
         mixingMatrix,
-        niftiBuffer,
+        niftiUrl,
         maskBuffer,
         crossComponentMetrics,
         qcNiftiBuffers,

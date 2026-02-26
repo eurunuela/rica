@@ -33,7 +33,7 @@ function generateMosaicString(numSlices, extents, offset = 0) {
   return `A ${axialSlices} ; S ${sagittalSlices} ; C ${coronalSlices}`;
 }
 
-function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, componentLabel, isDark = false }) {
+function BrainViewer({ niftiBuffer, niftiUrl, maskBuffer, componentIndex, width, height, componentLabel, isDark = false }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const nvRef = useRef(null);
@@ -88,7 +88,7 @@ function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, c
     let maskBlobUrl = null;
 
     async function initNiivue() {
-      if (!canvasRef.current || !niftiBuffer) return;
+      if (!canvasRef.current || (!niftiBuffer && !niftiUrl)) return;
 
       try {
         // Create Niivue instance with mosaic-friendly options
@@ -122,9 +122,13 @@ function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, c
           });
         }
 
-        // Load stat map with warm/cool diverging colormap
-        const statBlob = new Blob([niftiBuffer], { type: "application/gzip" });
-        statBlobUrl = URL.createObjectURL(statBlob);
+        // Load stat map: prefer URL (no ArrayBuffer copy in JS heap) over blob creation
+        if (niftiUrl) {
+          statBlobUrl = niftiUrl;  // Use directly — HTTP URL or blob: URL from File
+        } else {
+          const statBlob = new Blob([niftiBuffer], { type: "application/gzip" });
+          statBlobUrl = URL.createObjectURL(statBlob);
+        }
 
         const statVolume = {
           url: statBlobUrl,
@@ -208,8 +212,8 @@ function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, c
 
     return () => {
       mounted = false;
-      // Cleanup Blob URLs
-      if (statBlobUrl) {
+      // Cleanup Blob URLs — only revoke URLs we created (not external niftiUrl)
+      if (statBlobUrl && !niftiUrl) {
         URL.revokeObjectURL(statBlobUrl);
       }
       if (maskBlobUrl) {
@@ -221,7 +225,7 @@ function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, c
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [niftiBuffer, maskBuffer]); // Reinit when buffer or mask changes
+  }, [niftiBuffer, niftiUrl, maskBuffer]); // Reinit when buffer/url or mask changes
 
   // Update mosaic when slice offset changes
   useEffect(() => {
@@ -342,7 +346,7 @@ function BrainViewer({ niftiBuffer, maskBuffer, componentIndex, width, height, c
   }, [handleResize]);
 
   // Show placeholder if no data
-  if (!niftiBuffer) {
+  if (!niftiBuffer && !niftiUrl) {
     return (
       <div
         style={{

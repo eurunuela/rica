@@ -8,7 +8,7 @@ import { parseDecisionTree, parseStatusTable } from "../utils/decisionTreeUtils"
  * Container component for the decision tree visualization.
  * Parses the tree data and status table, then passes to DecisionTree component.
  */
-function DecisionTreeTab({ decisionTreeData, statusTableData, componentData, mixingMatrix, niftiBuffer, maskBuffer, isDark }) {
+function DecisionTreeTab({ decisionTreeData, statusTableData, componentData, mixingMatrix, niftiBuffer, niftiUrl, maskBuffer, isDark }) {
   // Parse decision tree and status table
   const parsedTree = useMemo(() => {
     if (!decisionTreeData) return null;
@@ -141,6 +141,7 @@ function DecisionTreeTab({ decisionTreeData, statusTableData, componentData, mix
           componentData={componentData}
           mixingMatrix={mixingMatrix}
           niftiBuffer={niftiBuffer}
+          niftiUrl={niftiUrl}
           maskBuffer={maskBuffer}
           isDark={isDark}
         />

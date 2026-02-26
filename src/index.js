@@ -64,6 +64,7 @@ function App() {
   // New state for Niivue integration
   const [mixingMatrix, setMixingMatrix] = useState(null);
   const [niftiBuffer, setNiftiBuffer] = useState(null);
+  const [niftiUrl, setNiftiUrl] = useState(null);
   const [maskBuffer, setMaskBuffer] = useState(null);
   const [crossComponentMetrics, setCrossComponentMetrics] = useState(null);
   const [qcNiftiBuffers, setQcNiftiBuffers] = useState({});
@@ -179,7 +180,8 @@ function App() {
       setOriginalData(data.originalData);
       // New data for Niivue integration
       setMixingMatrix(data.mixingMatrix);
-      setNiftiBuffer(data.niftiBuffer);
+      setNiftiBuffer(data.niftiBuffer || null);
+      setNiftiUrl(data.niftiUrl || null);
       setMaskBuffer(data.maskBuffer);
       setCrossComponentMetrics(data.crossComponentMetrics);
       setQcNiftiBuffers(data.qcNiftiBuffers || {});
@@ -454,6 +456,7 @@ function App() {
                     originalData={originalData}
                     mixingMatrix={mixingMatrix}
                     niftiBuffer={niftiBuffer}
+                    niftiUrl={niftiUrl}
                     maskBuffer={maskBuffer}
                     crossComponentMetrics={crossComponentMetrics}
                     externalRegressorsFigure={externalRegressorsFigure}
@@ -480,6 +483,7 @@ function App() {
                       componentData={componentData}
                       mixingMatrix={mixingMatrix}
                       niftiBuffer={niftiBuffer}
+                      niftiUrl={niftiUrl}
                       maskBuffer={maskBuffer}
                       isDark={isDark}
                     />
