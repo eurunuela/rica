@@ -268,9 +268,28 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
 
           // ICA components NIfTI
           if ((filename.includes("_desc-ICA_components.nii.gz") && !filename.includes("_echo-")) || filename === "betas_OC.nii.gz") {
+            // Extract TR from NIfTI header using a Range request (first 4KB is enough to
+            // decompress the header from gzip), independent of loading the full file.
+            if (!repetitionTime) {
+              try {
+                const headerResponse = await fetch(`/${filepath}`, {
+                  headers: { Range: "bytes=0-4095" },
+                });
+                if (headerResponse.ok || headerResponse.status === 206) {
+                  const headerBuffer = await headerResponse.arrayBuffer();
+                  const tr = await extractTRFromNifti(headerBuffer);
+                  if (tr) {
+                    repetitionTime = tr;
+                    console.log("[Rica] Extracted RepetitionTime from NIfTI header (Range):", repetitionTime);
+                  }
+                }
+              } catch {
+                // Range requests not supported; TR will be extracted from full buffer below
+              }
+            }
             const response = await fetch(`/${filepath}`);
             niftiBuffer = await response.arrayBuffer();
-            // Extract TR from NIfTI header (same as tedana's get_zooms()[-1])
+            // Fallback: extract TR from full buffer if Range request didn't work
             if (!repetitionTime) {
               const tr = await extractTRFromNifti(niftiBuffer);
               if (tr) {
@@ -558,15 +577,17 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
 
           // ICA components NIfTI (4D brain maps for Niivue)
           if ((filename.includes("_desc-ICA_components.nii.gz") && !filename.includes("_echo-")) || filename === "betas_OC.nii.gz") {
-            niftiBuffer = await readFileAsArrayBuffer(file);
-            // Extract TR from NIfTI header (same as tedana's get_zooms()[-1])
+            // Extract TR from first 4KB only — enough to decompress the NIfTI header
+            // from gzip — independent of loading the full (potentially huge) file.
             if (!repetitionTime) {
-              const tr = await extractTRFromNifti(niftiBuffer);
+              const headerBuffer = await file.slice(0, 4096).arrayBuffer();
+              const tr = await extractTRFromNifti(headerBuffer);
               if (tr) {
                 repetitionTime = tr;
-                console.log("[Rica] Extracted RepetitionTime from NIfTI header:", repetitionTime);
+                console.log("[Rica] Extracted RepetitionTime from NIfTI header (4KB slice):", repetitionTime);
               }
             }
+            niftiBuffer = await readFileAsArrayBuffer(file);
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
