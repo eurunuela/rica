@@ -72,8 +72,10 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
     localStorage.setItem('rica-table-collapsed', isTableCollapsed.toString());
   }, [isTableCollapsed]);
 
-  // Check if we have the new interactive visualization data
-  const hasInteractiveViews = mixingMatrix?.data && (niftiBuffer || niftiUrl);
+  // Interactive views (time series + FFT) require only the mixing matrix.
+  // The brain viewer additionally requires the NIfTI.
+  const hasInteractiveViews = mixingMatrix?.data?.length > 0;
+  const hasBrainViewer = !!(niftiBuffer || niftiUrl);
 
   // Extract elbow thresholds from cross-component metrics (if available)
   const kappaElbow = crossComponentMetrics?.kappa_allcomps_elbow;
@@ -544,19 +546,21 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
                 />
               </div>
 
-              {/* Brain stat map viewer in middle */}
-              <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                <BrainViewer
-                  niftiBuffer={niftiBuffer}
-                  niftiUrl={niftiUrl}
-                  maskBuffer={maskBuffer}
-                  componentIndex={selectedIndex}
-                  width={750}
-                  height={560}
-                  componentLabel={currentComponentLabel}
-                  isDark={isDark}
-                />
-              </div>
+              {/* Brain stat map viewer in middle — only if NIfTI is available */}
+              {hasBrainViewer && (
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                  <BrainViewer
+                    niftiBuffer={niftiBuffer}
+                    niftiUrl={niftiUrl}
+                    maskBuffer={maskBuffer}
+                    componentIndex={selectedIndex}
+                    width={750}
+                    height={560}
+                    componentLabel={currentComponentLabel}
+                    isDark={isDark}
+                  />
+                </div>
+              )}
 
               {/* FFT on bottom */}
               <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>

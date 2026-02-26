@@ -175,7 +175,8 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
   const visualizationContainerRef = useRef(null);
 
   // Check if we have interactive views available
-  const hasInteractiveViews = !!(mixingMatrix?.data && (niftiBuffer || niftiUrl) && maskBuffer);
+  const hasInteractiveViews = !!(mixingMatrix?.data?.length > 0);
+  const hasBrainViewer = !!(niftiBuffer || niftiUrl);
 
   // Measure container width for responsive visualizations (only when component is selected and has views)
   const containerWidth = useContainerWidth(visualizationContainerRef, !!(selectedComponent && hasInteractiveViews));
@@ -717,19 +718,21 @@ function DecisionTree({ treeData, componentPaths, componentData, mixingMatrix, n
               />
             </div>
 
-            {/* Brain stat map viewer - full width, takes remaining height */}
-            <div style={{ width: "100%", minWidth: 0, flex: 1, minHeight: "300px" }}>
-              <BrainViewer
-                niftiBuffer={niftiBuffer}
-                niftiUrl={niftiUrl}
-                maskBuffer={maskBuffer}
-                componentIndex={selectedComponentIndex}
-                width={containerWidth}
-                height={560}
-                componentLabel={currentComponentLabel}
-                isDark={isDark}
-              />
-            </div>
+            {/* Brain stat map viewer - only if NIfTI is available */}
+            {hasBrainViewer && (
+              <div style={{ width: "100%", minWidth: 0, flex: 1, minHeight: "300px" }}>
+                <BrainViewer
+                  niftiBuffer={niftiBuffer}
+                  niftiUrl={niftiUrl}
+                  maskBuffer={maskBuffer}
+                  componentIndex={selectedComponentIndex}
+                  width={containerWidth}
+                  height={560}
+                  componentLabel={currentComponentLabel}
+                  isDark={isDark}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
