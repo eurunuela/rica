@@ -46,6 +46,7 @@ RICA_FILE_PATTERNS = [
     # Decision tree files
     "decision_tree.json",
     "status_table.tsv",
+    "registry.json",
 ]
 
 # Ensure proper MIME types
