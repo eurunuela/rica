@@ -88,8 +88,15 @@ class RicaHandler(http.server.SimpleHTTPRequestHandler):
         for f in cwd.rglob("*"):
             if f.is_file():
                 # Check if file matches any Rica pattern
-                if any(pattern in f.name for pattern in RICA_FILE_PATTERNS) and not (
-                    "_components.nii.gz" in f.name and "stat-z" in f.name
+                if (
+                    any(pattern in f.name for pattern in RICA_FILE_PATTERNS)
+                    and not ("_components.nii.gz" in f.name and "stat-z" in f.name)
+                    and not ("_components.nii.gz" in f.name and "echo-" in f.name)
+                    and not (
+                        "_components.nii.gz" in f.name
+                        and "_desc-ICA_" not in f.name
+                        and "betas_OC" not in f.name
+                    )
                 ):
                     # Store relative path with forward slashes
                     rel_path = str(f.relative_to(cwd)).replace("\\", "/")
@@ -144,6 +151,12 @@ def main():
             f.is_file()
             and any(p in f.name for p in RICA_FILE_PATTERNS)
             and not ("_components.nii.gz" in f.name and "stat-z" in f.name)
+            and not ("_components.nii.gz" in f.name and "echo-" in f.name)
+            and not (
+                "_components.nii.gz" in f.name
+                and "_desc-ICA_" not in f.name
+                and "betas_OC" not in f.name
+            )
         ):
             rica_files.append(f.name)
 
