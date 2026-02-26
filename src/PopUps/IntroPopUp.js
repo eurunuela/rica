@@ -6,6 +6,7 @@ import { parseMixingMatrix } from "../utils/tsvParser";
 import { extractTRFromNifti } from "../utils/niftiUtils";
 import { LOGO_DATA_URL } from "../constants/logo";
 import { VERSION_DISPLAY } from "../constants/version";
+import { trackDatasetLoaded } from "../utils/analytics";
 
 // Convert blob to data URL
 function blobToDataURL(blob) {
@@ -375,6 +376,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       // Apply manual classifications if available
       applyManualClassifications(components, manualClassificationData);
 
+      trackDatasetLoaded();
+
       // Pass all data to parent
       onDataLoad({
         componentFigures: compFigures,
@@ -655,6 +658,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
 
       // Apply manual classifications if available
       applyManualClassifications(components, manualClassificationData);
+
+      trackDatasetLoaded();
 
       // Pass all data to parent at once - no delays!
       onDataLoad({
