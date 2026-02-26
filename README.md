@@ -2,6 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/391155862.svg)](https://zenodo.org/badge/latestdoi/391155862)
 [![Documentation](https://img.shields.io/badge/docs-online-blue)](https://me-ica.github.io/rica/)
+[![Datasets Loaded](https://rica-fmri.goatcounter.com/counter/dataset-loaded.svg)](https://rica-fmri.goatcounter.com)
 
 **Rica** (Reports for ICA) is an interactive visualization tool for reviewing and classifying ICA components from [tedana](https://github.com/ME-ICA/tedana) multi-echo fMRI analysis.
 
@@ -135,6 +136,12 @@ npm version patch  # 2.0.0 -> 2.0.1
 npm version minor  # 2.0.0 -> 2.1.0
 npm version major  # 2.0.0 -> 3.0.0
 ```
+
+## Usage Statistics
+
+Rica tracks anonymous dataset load counts via [GoatCounter](https://www.goatcounter.com/), a privacy-friendly, open-source analytics tool. No personal data is collected — only a counter is incremented when a dataset is successfully loaded in the online app.
+
+View daily, monthly, and yearly breakdowns on the public dashboard: **[rica-fmri.goatcounter.com](https://rica-fmri.goatcounter.com)**
 
 ## Contributing
 
