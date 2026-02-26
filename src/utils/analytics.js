@@ -12,7 +12,7 @@
 
 const GOATCOUNTER_ENDPOINT = "https://rica-fmri.goatcounter.com/count";
 
-function trackEvent(path, title) {
+function trackEvent(path) {
   // Skip tracking in local/development environments
   if (
     window.location.hostname === "localhost" ||
@@ -21,14 +21,13 @@ function trackEvent(path, title) {
     return;
   }
 
-  const params = new URLSearchParams({
-    p: path,
-    t: title || document.title,
-    r: document.referrer,
-  });
+  // Only send the path — no title, referrer, or other metadata
+  const params = new URLSearchParams({ p: path });
 
   // Pixel approach: no CORS issues, fire-and-forget
+  // referrerPolicy ensures the browser does not include a Referer header
   const img = new Image();
+  img.referrerPolicy = "no-referrer";
   img.src = `${GOATCOUNTER_ENDPOINT}?${params.toString()}`;
 }
 
@@ -37,5 +36,5 @@ function trackEvent(path, title) {
  * Call this when a user finishes loading a dataset (server or file picker).
  */
 export function trackDatasetLoaded() {
-  trackEvent("/dataset-loaded", "Dataset Loaded");
+  trackEvent("/dataset-loaded");
 }
