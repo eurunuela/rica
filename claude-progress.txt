@@ -2696,3 +2696,47 @@ Bug fix release supporting tedana `--convention orig` output.
 - **Fixed orig convention support**: Case-sensitive PCA/Orth exclusions caused orig convention files to slip through filters and overwrite ICA data
 - **Added orig convention file patterns**: betas_OC.nii.gz, t2svG.nii, s0vG.nii.gz, rmse.nii.gz, cross_component_metrics.json
 - **Updated server file patterns**: rica_server.py now discovers orig convention files
+
+---
+
+## Session - Fix Backpressure Deadlock and Missing registry.json Pattern (2026-02-26)
+
+### Goals
+- Fix backpressure deadlock in `decompressHeader` for large NIfTI files
+- Add `registry.json` to server file patterns so RepetitionTime is discoverable
+
+### Bug 1: Backpressure Deadlock in `decompressHeader`
+
+**Root Cause**: In `src/utils/niftiUtils.js`, the `decompressHeader` function awaited `writer.write()` and `writer.close()` before starting to read from the `DecompressionStream`. For large NIfTI files (100+ MB), the browser's `DecompressionStream` uses backpressure: `writer.write()` blocks waiting for the reader to consume data. Since reading only started after `write()` resolved, neither side could make progress — a classic deadlock.
+
+**Fix**: Changed `writer.write()` from awaited to fire-and-forget with a chained `.then(() => writer.close()).catch(() => {})`. Reading now starts immediately after the write is initiated, allowing write and read to proceed concurrently.
+
+#### `src/utils/niftiUtils.js`
+Changed:
+```javascript
+await writer.write(new Uint8Array(gzBuffer));
+await writer.close();
+```
+To:
+```javascript
+// Write without awaiting to prevent backpressure deadlock with large files.
+// Reading starts immediately below, consuming data as it's decompressed.
+writer.write(new Uint8Array(gzBuffer)).then(() => writer.close()).catch(() => {});
+```
+
+### Bug 2: Missing `registry.json` in Server File Patterns
+
+**Root Cause**: `scripts/rica_server.py`'s `RICA_FILE_PATTERNS` list did not include `"registry.json"`. The `registry.json` file (produced by tedana) contains the `RepetitionTime` field used to compute the correct frequency axis for the power spectrum. Without this pattern, the server's `/api/files` endpoint never returned `registry.json`, so Rica could not discover TR from this file.
+
+**Fix**: Added `"registry.json"` to `RICA_FILE_PATTERNS` after `"status_table.tsv"`.
+
+#### `scripts/rica_server.py`
+Added `"registry.json"` to `RICA_FILE_PATTERNS`:
+```python
+    "status_table.tsv",
+    "registry.json",
+```
+
+### Files Modified
+- `src/utils/niftiUtils.js` - Fix backpressure deadlock in `decompressHeader`
+- `scripts/rica_server.py` - Add `registry.json` to file discovery patterns

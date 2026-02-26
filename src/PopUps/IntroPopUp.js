@@ -145,7 +145,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           (f.includes("_metrics.tsv") && !f.toLowerCase().includes("pca")) ||
           (f.startsWith("tedana_20") && f.endsWith(".tsv")) ||
           (f.includes("_mixing.tsv") && !f.toLowerCase().includes("pca") && !f.toLowerCase().includes("orth")) ||
-          (f.includes("_components.nii.gz") && f.toLowerCase().includes("ica") && !f.includes("stat-z")) ||
+          (f.includes("_components.nii.gz") && f.toLowerCase().includes("ica") && !f.includes("stat-z") && !f.includes("echo-")) ||
           f === "betas_OC.nii.gz" ||
           f.includes("_mask.nii") ||
           f.includes("CrossComponent_metrics.json") ||
@@ -175,6 +175,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       let dirPath = basePath || "";
       let mixingMatrix = null;
       let niftiBuffer = null;
+      let niftiUrl = null;
       let maskBuffer = null;
       let crossComponentMetrics = null;
       // QC NIfTI buffers
@@ -267,16 +268,34 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           }
 
           // ICA components NIfTI
-          if ((filename.includes("_components.nii.gz") && filename.toLowerCase().includes("ica") && !filename.includes("stat-z")) || filename === "betas_OC.nii.gz") {
-            const response = await fetch(`/${filepath}`);
-            niftiBuffer = await response.arrayBuffer();
-            // Extract TR from NIfTI header (same as tedana's get_zooms()[-1])
+          if ((filename.includes("_components.nii.gz") && filename.toLowerCase().includes("ica") && !filename.includes("stat-z") && !filename.includes("echo-")) || filename === "betas_OC.nii.gz") {
+            // Extract TR from NIfTI header using a Range request (first 4KB is enough to
+            // decompress the header from gzip), independent of loading the full file.
             if (!repetitionTime) {
-              const tr = await extractTRFromNifti(niftiBuffer);
-              if (tr) {
-                repetitionTime = tr;
-                console.log("[Rica] Extracted RepetitionTime from NIfTI header:", repetitionTime);
+              try {
+                const headerResponse = await fetch(`/${filepath}`, {
+                  headers: { Range: "bytes=0-4095" },
+                });
+                if (headerResponse.ok || headerResponse.status === 206) {
+                  const headerBuffer = await headerResponse.arrayBuffer();
+                  const tr = await extractTRFromNifti(headerBuffer);
+                  if (tr) {
+                    repetitionTime = tr;
+                    console.log("[Rica] Extracted RepetitionTime from NIfTI header (Range):", repetitionTime);
+                  }
+                }
+              } catch {
+                // Range requests not supported; TR won't be extracted from header
               }
+            }
+            // Always set URL so BrainViewer can load even if buffer fails
+            niftiUrl = `/${filepath}`;
+            // Also try loading the full buffer (fails gracefully for very large files)
+            try {
+              const response = await fetch(`/${filepath}`);
+              niftiBuffer = await response.arrayBuffer();
+            } catch {
+              console.warn("[Rica] NIfTI too large for ArrayBuffer, Niivue will load from URL");
             }
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
@@ -389,6 +408,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         dirPath,
         mixingMatrix,
         niftiBuffer,
+        niftiUrl,
         maskBuffer,
         crossComponentMetrics,
         qcNiftiBuffers,
@@ -442,7 +462,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           (f.name.startsWith("tedana_20") && f.name.endsWith(".tsv")) ||
           // New files for Niivue integration
           (f.name.includes("_mixing.tsv") && !f.name.toLowerCase().includes("pca") && !f.name.toLowerCase().includes("orth")) ||
-          (f.name.includes("_components.nii.gz") && f.name.toLowerCase().includes("ica") && !f.name.includes("stat-z")) ||
+          (f.name.includes("_components.nii.gz") && f.name.toLowerCase().includes("ica") && !f.name.includes("stat-z") && !f.name.includes("echo-")) ||
           f.name === "betas_OC.nii.gz" ||
           f.name.includes("_mask.nii") ||
           f.name.includes("CrossComponent_metrics.json") ||
@@ -472,6 +492,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       let dirPath = "";
       let mixingMatrix = null;
       let niftiBuffer = null;
+      let niftiUrl = null;
       let maskBuffer = null;
       let crossComponentMetrics = null;
       // QC NIfTI buffers
@@ -557,15 +578,24 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           }
 
           // ICA components NIfTI (4D brain maps for Niivue)
-          if ((filename.includes("_components.nii.gz") && filename.toLowerCase().includes("ica") && !filename.includes("stat-z")) || filename === "betas_OC.nii.gz") {
-            niftiBuffer = await readFileAsArrayBuffer(file);
-            // Extract TR from NIfTI header (same as tedana's get_zooms()[-1])
+          if ((filename.includes("_components.nii.gz") && filename.toLowerCase().includes("ica") && !filename.includes("stat-z") && !filename.includes("echo-")) || filename === "betas_OC.nii.gz") {
+            // Extract TR from first 4KB only — enough to decompress the NIfTI header
+            // from gzip — independent of loading the full (potentially huge) file.
             if (!repetitionTime) {
-              const tr = await extractTRFromNifti(niftiBuffer);
+              const headerBuffer = await file.slice(0, 4096).arrayBuffer();
+              const tr = await extractTRFromNifti(headerBuffer);
               if (tr) {
                 repetitionTime = tr;
-                console.log("[Rica] Extracted RepetitionTime from NIfTI header:", repetitionTime);
+                console.log("[Rica] Extracted RepetitionTime from NIfTI header (4KB slice):", repetitionTime);
               }
+            }
+            // Always set URL so BrainViewer can load even if buffer fails
+            niftiUrl = URL.createObjectURL(file);
+            // Also try loading the full buffer (fails gracefully for very large files)
+            try {
+              niftiBuffer = await readFileAsArrayBuffer(file);
+            } catch {
+              console.warn("[Rica] NIfTI too large for ArrayBuffer, Niivue will load from blob URL");
             }
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
@@ -673,6 +703,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         // New data for Niivue integration
         mixingMatrix,
         niftiBuffer,
+        niftiUrl,
         maskBuffer,
         crossComponentMetrics,
         qcNiftiBuffers,
