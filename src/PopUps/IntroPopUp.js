@@ -175,6 +175,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       let dirPath = basePath || "";
       let mixingMatrix = null;
       let niftiBuffer = null;
+      let niftiUrl = null;
       let maskBuffer = null;
       let crossComponentMetrics = null;
       // QC NIfTI buffers
@@ -287,8 +288,15 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
                 // Range requests not supported; TR won't be extracted from header
               }
             }
-            const response = await fetch(`/${filepath}`);
-            niftiBuffer = await response.arrayBuffer();
+            // Always set URL so BrainViewer can load even if buffer fails
+            niftiUrl = `/${filepath}`;
+            // Also try loading the full buffer (fails gracefully for very large files)
+            try {
+              const response = await fetch(`/${filepath}`);
+              niftiBuffer = await response.arrayBuffer();
+            } catch {
+              console.warn("[Rica] NIfTI too large for ArrayBuffer, Niivue will load from URL");
+            }
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
@@ -400,6 +408,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         dirPath,
         mixingMatrix,
         niftiBuffer,
+        niftiUrl,
         maskBuffer,
         crossComponentMetrics,
         qcNiftiBuffers,
@@ -483,6 +492,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       let dirPath = "";
       let mixingMatrix = null;
       let niftiBuffer = null;
+      let niftiUrl = null;
       let maskBuffer = null;
       let crossComponentMetrics = null;
       // QC NIfTI buffers
@@ -579,7 +589,14 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
                 console.log("[Rica] Extracted RepetitionTime from NIfTI header (4KB slice):", repetitionTime);
               }
             }
-            niftiBuffer = await readFileAsArrayBuffer(file);
+            // Always set URL so BrainViewer can load even if buffer fails
+            niftiUrl = URL.createObjectURL(file);
+            // Also try loading the full buffer (fails gracefully for very large files)
+            try {
+              niftiBuffer = await readFileAsArrayBuffer(file);
+            } catch {
+              console.warn("[Rica] NIfTI too large for ArrayBuffer, Niivue will load from blob URL");
+            }
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
@@ -686,6 +703,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         // New data for Niivue integration
         mixingMatrix,
         niftiBuffer,
+        niftiUrl,
         maskBuffer,
         crossComponentMetrics,
         qcNiftiBuffers,
