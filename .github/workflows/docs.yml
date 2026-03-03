@@ -7,10 +7,12 @@ on:
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
   pull_request:
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
   release:
     types: [published]
   workflow_dispatch:
@@ -33,6 +35,10 @@ jobs:
 
       - name: Install dependencies
         run: pip install "mkdocs-material>=9,<10" "mkdocs<2.0"
+
+      - name: Setup Pages
+        if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@v4
 
       - name: Build documentation
         run: mkdocs build --strict
@@ -93,9 +99,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v4
-
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
