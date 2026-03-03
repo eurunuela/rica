@@ -1,0 +1,33 @@
+name: Update CITATION.cff
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  update-citation:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update version and date in CITATION.cff
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          DATE="$(git show -s --format=%cs "$GITHUB_SHA")"
+          sed -i "s/^version: .*/version: v${VERSION}/" CITATION.cff
+          sed -i "s/^date-released: .*/date-released: ${DATE}/" CITATION.cff
+
+      - name: Commit updated CITATION.cff
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CITATION.cff
+          git diff --cached --quiet || git commit -m "chore: update CITATION.cff to ${GITHUB_REF_NAME} [skip ci]"
+          git push origin ${{ github.event.repository.default_branch }}
