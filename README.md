@@ -110,28 +110,26 @@ npx gulp
 
 ## Updating Rica Without Rerunning Tedana
 
-Tedana generates an `open_rica_report.py` script in its output directory that bundles a specific version of Rica. If a newer Rica release is available (with bug fixes or new features), you can update without rerunning tedana:
+Tedana generates an `open_rica_report.py` script in its output directory. This script **automatically downloads the latest Rica** from GitHub every time it runs — you usually don't need to do anything special:
 
-### Option A: Use Rica Online (Easiest)
+```bash
+python open_rica_report.py
+```
 
-Visit **https://rica-fmri.netlify.app** — always up-to-date, no files to change.
+To force a fresh download regardless of the cached version:
 
-### Option B: Replace the Local Files
+```bash
+python open_rica_report.py --force-download
+```
 
-1. Download the latest `index.html` and `rica_server.py` from the [releases page](https://github.com/ME-ICA/rica/releases/latest)
+To use a local or custom build, set the `TEDANA_RICA_PATH` environment variable to a directory containing `index.html` and `rica_server.py`:
 
-2. Copy them into your tedana output folder:
-   ```bash
-   cp index.html rica_server.py /path/to/tedana/output/
-   ```
+```bash
+export TEDANA_RICA_PATH=/path/to/rica/build
+python open_rica_report.py
+```
 
-3. Run the updated server instead of `open_rica_report.py`:
-   ```bash
-   cd /path/to/tedana/output/
-   python rica_server.py
-   ```
-
-`rica_server.py` is a drop-in replacement for `open_rica_report.py` — it serves the same data, just with the newer Rica version. See the [full guide](https://me-ica.github.io/rica/updating-rica/) for more details including bulk updates across multiple folders.
+See the [full guide](https://me-ica.github.io/rica/updating-rica/) for details on offline use, pinning versions, and building Rica from source.
 
 ## Required Files
 
