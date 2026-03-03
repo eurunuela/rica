@@ -108,6 +108,29 @@ npx gulp
 # - rica_server.py (local server)
 ```
 
+## Updating Rica Without Rerunning Tedana
+
+Tedana generates an `open_rica_report.py` script in its output directory. This script **automatically downloads the latest Rica** from GitHub every time it runs — you usually don't need to do anything special:
+
+```bash
+python open_rica_report.py
+```
+
+To force a fresh download regardless of the cached version:
+
+```bash
+python open_rica_report.py --force-download
+```
+
+To use a local or custom build, set the `TEDANA_RICA_PATH` environment variable to a directory containing `index.html` and `rica_server.py`:
+
+```bash
+export TEDANA_RICA_PATH=/path/to/rica/build
+python open_rica_report.py
+```
+
+See the [full guide](https://me-ica.github.io/rica/updating-rica/) for details on offline use, pinning versions, and building Rica from source.
+
 ## Required Files
 
 Rica expects these files from tedana output:

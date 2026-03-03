@@ -38,6 +38,7 @@ nav:
     - ICA Tab Guide: ica-tab-guide.md
     - Classification Workflow: classification-workflow.md
     - QC Tab Guide: qc-tab-guide.md
+  - Updating Rica: updating-rica.md
   - Troubleshooting: troubleshooting.md
 
 markdown_extensions:
