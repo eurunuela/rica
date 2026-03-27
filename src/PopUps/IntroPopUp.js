@@ -141,14 +141,14 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         (f) =>
           f.includes("comp_") ||
           f.includes(".svg") ||
-          f === "report.txt" ||
+          f.endsWith("report.txt") ||
           (f.includes("_metrics.tsv") && !f.toLowerCase().includes("pca")) ||
-          (f.startsWith("tedana_20") && f.endsWith(".tsv")) ||
+          (f.startsWith("tedana_20") || f.endsWith("_tedana_log.tsv")) ||
           (f.includes("_mixing.tsv") && !f.toLowerCase().includes("pca") && !f.toLowerCase().includes("orth")) ||
           (f.includes("_components.nii.gz") && f.toLowerCase().includes("ica") && !f.includes("stat-z") && !f.includes("echo-")) ||
           f === "betas_OC.nii.gz" ||
           f.includes("_mask.nii") ||
-          f.includes("CrossComponent_metrics.json") ||
+          (f.includes("CrossComponent_metrics.json") && !f.toLowerCase().includes("pca")) ||
           (f.includes("cross_component_metrics.json") && !f.toLowerCase().includes("pca")) ||
           f === "manual_classification.tsv" ||
           // QC NIfTI files
@@ -190,8 +190,9 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       // Repetition time from registry
       let repetitionTime = null;
 
-      // Process files via HTTP fetch
-      for (const filepath of relevantFiles) {
+      // Process files via HTTP fetch (parallel)
+      try {
+      const filePromises = relevantFiles.map(async (filepath) => {
         const filename = filepath.split("/").pop();
 
         try {
@@ -221,7 +222,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           }
 
           // Report info
-          if (filename === "report.txt") {
+          if (filename.endsWith("report.txt")) {
             const response = await fetch(`/${filepath}`);
             info = await response.text();
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
@@ -243,7 +244,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           }
 
           // Dataset path
-          if (filename.startsWith("tedana_20") && filename.endsWith(".tsv")) {
+          if (filename.startsWith("tedana_20") || filename.endsWith("_tedana_log.tsv")) {
             const response = await fetch(`/${filepath}`);
             const text = await response.text();
             const lines = text.split("\n");
@@ -271,12 +272,14 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           if ((filename.includes("_components.nii.gz") && filename.toLowerCase().includes("ica") && !filename.includes("stat-z") && !filename.includes("echo-")) || filename === "betas_OC.nii.gz") {
             // Extract TR from NIfTI header using a Range request (first 4KB is enough to
             // decompress the header from gzip), independent of loading the full file.
+            // Only trust 206 Partial Content — if the proxy doesn't forward Range headers,
+            // the server returns 200 with the full file, which would hang on arrayBuffer().
             if (!repetitionTime) {
               try {
                 const headerResponse = await fetch(`/${filepath}`, {
                   headers: { Range: "bytes=0-4095" },
                 });
-                if (headerResponse.ok || headerResponse.status === 206) {
+                if (headerResponse.status === 206) {
                   const headerBuffer = await headerResponse.arrayBuffer();
                   const tr = await extractTRFromNifti(headerBuffer);
                   if (tr) {
@@ -288,15 +291,9 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
                 // Range requests not supported; TR won't be extracted from header
               }
             }
-            // Always set URL so BrainViewer can load even if buffer fails
+            // Use URL — BrainViewer prefers URL over buffer anyway, and skipping the
+            // full download avoids hanging Promise.all on large files through the proxy.
             niftiUrl = `/${filepath}`;
-            // Also try loading the full buffer (fails gracefully for very large files)
-            try {
-              const response = await fetch(`/${filepath}`);
-              niftiBuffer = await response.arrayBuffer();
-            } catch {
-              console.warn("[Rica] NIfTI too large for ArrayBuffer, Niivue will load from URL");
-            }
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
@@ -308,7 +305,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           }
 
           // Cross-component metrics (for elbow thresholds)
-          if (filename.includes("CrossComponent_metrics.json") ||
+          if ((filename.includes("CrossComponent_metrics.json") && !filename.toLowerCase().includes("pca")) ||
               (filename.includes("cross_component_metrics.json") && !filename.toLowerCase().includes("pca"))) {
             const response = await fetch(`/${filepath}`);
             crossComponentMetrics = await response.json();
@@ -385,7 +382,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         } catch (error) {
           console.error(`Error fetching file ${filepath}:`, error);
         }
-      }
+      });
+      await Promise.all(filePromises);
 
       // Sort component figures by name
       compFigures.sort((a, b) => a.name.localeCompare(b.name));
@@ -419,6 +417,29 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         statusTableData,
         repetitionTime,
       });
+      } catch (err) {
+        console.error("[Rica] loadFromServer failed:", err);
+        onDataLoad({
+          componentFigures: compFigures,
+          carpetFigures,
+          diagnosticFigures,
+          components: [components],
+          info,
+          originalData: [originalData],
+          dirPath,
+          mixingMatrix,
+          niftiBuffer,
+          niftiUrl,
+          maskBuffer,
+          crossComponentMetrics,
+          qcNiftiBuffers,
+          externalRegressorsFigure,
+          hasManualClassifications: manualClassificationData && manualClassificationData.length > 0,
+          decisionTreeData,
+          statusTableData,
+          repetitionTime,
+        });
+      }
     },
     [onDataLoad, onLoadingStart]
   );
@@ -457,15 +478,15 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
         (f) =>
           f.name.includes("comp_") ||
           f.name.includes(".svg") ||
-          f.name === "report.txt" ||
+          f.name.endsWith("report.txt") ||
           (f.name.includes("_metrics.tsv") && !f.name.toLowerCase().includes("pca")) ||
-          (f.name.startsWith("tedana_20") && f.name.endsWith(".tsv")) ||
+          (f.name.startsWith("tedana_20") || f.name.endsWith("_tedana_log.tsv")) ||
           // New files for Niivue integration
           (f.name.includes("_mixing.tsv") && !f.name.toLowerCase().includes("pca") && !f.name.toLowerCase().includes("orth")) ||
           (f.name.includes("_components.nii.gz") && f.name.toLowerCase().includes("ica") && !f.name.includes("stat-z") && !f.name.includes("echo-")) ||
           f.name === "betas_OC.nii.gz" ||
           f.name.includes("_mask.nii") ||
-          f.name.includes("CrossComponent_metrics.json") ||
+          (f.name.includes("CrossComponent_metrics.json") && !f.name.toLowerCase().includes("pca")) ||
           (f.name.includes("cross_component_metrics.json") && !f.name.toLowerCase().includes("pca")) ||
           f.name === "manual_classification.tsv" ||
           // QC NIfTI files
@@ -534,7 +555,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           }
 
           // Report info
-          if (filename === "report.txt") {
+          if (filename.endsWith("report.txt")) {
             info = await readFileAsText(file);
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
@@ -554,7 +575,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           }
 
           // Dataset path
-          if (filename.startsWith("tedana_20") && filename.endsWith(".tsv")) {
+          if (filename.startsWith("tedana_20") || filename.endsWith("_tedana_log.tsv")) {
             const text = await readFileAsText(file);
             // Look for the line containing "Using output directory:"
             const lines = text.split("\n");
@@ -607,7 +628,7 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           }
 
           // Cross-component metrics (for elbow thresholds)
-          if (filename.includes("CrossComponent_metrics.json") ||
+          if ((filename.includes("CrossComponent_metrics.json") && !filename.toLowerCase().includes("pca")) ||
               (filename.includes("cross_component_metrics.json") && !filename.toLowerCase().includes("pca"))) {
             const text = await readFileAsText(file);
             crossComponentMetrics = JSON.parse(text);

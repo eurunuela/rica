@@ -167,7 +167,7 @@ def main():
 
     # Start server
     try:
-        with http.server.HTTPServer(("", args.port), RicaHandler) as httpd:
+        with http.server.ThreadingHTTPServer(("", args.port), RicaHandler) as httpd:
             url = f"http://localhost:{args.port}"
             print(f"Rica server running at {url}")
             print(f"Serving files from: {cwd}")
