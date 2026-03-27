@@ -272,12 +272,14 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           if ((filename.includes("_components.nii.gz") && filename.toLowerCase().includes("ica") && !filename.includes("stat-z") && !filename.includes("echo-")) || filename === "betas_OC.nii.gz") {
             // Extract TR from NIfTI header using a Range request (first 4KB is enough to
             // decompress the header from gzip), independent of loading the full file.
+            // Only trust 206 Partial Content — if the proxy doesn't forward Range headers,
+            // the server returns 200 with the full file, which would hang on arrayBuffer().
             if (!repetitionTime) {
               try {
                 const headerResponse = await fetch(`/${filepath}`, {
                   headers: { Range: "bytes=0-4095" },
                 });
-                if (headerResponse.ok || headerResponse.status === 206) {
+                if (headerResponse.status === 206) {
                   const headerBuffer = await headerResponse.arrayBuffer();
                   const tr = await extractTRFromNifti(headerBuffer);
                   if (tr) {
@@ -289,15 +291,9 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
                 // Range requests not supported; TR won't be extracted from header
               }
             }
-            // Always set URL so BrainViewer can load even if buffer fails
+            // Use URL — BrainViewer prefers URL over buffer anyway, and skipping the
+            // full download avoids hanging Promise.all on large files through the proxy.
             niftiUrl = `/${filepath}`;
-            // Also try loading the full buffer (fails gracefully for very large files)
-            try {
-              const response = await fetch(`/${filepath}`);
-              niftiBuffer = await response.arrayBuffer();
-            } catch {
-              console.warn("[Rica] NIfTI too large for ArrayBuffer, Niivue will load from URL");
-            }
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
 
