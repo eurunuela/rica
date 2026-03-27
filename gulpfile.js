@@ -10,6 +10,7 @@ function inlineAssets() {
       inlinesource({
         compress: false,
         ignore: ["png"],
+        rootpath: "build",
       })
     )
     .pipe(dest("./build"));
