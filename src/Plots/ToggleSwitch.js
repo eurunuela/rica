@@ -6,14 +6,16 @@ const titleCase = (str) =>
     .map((w) => w[0].toUpperCase() + w.slice(1))
     .join(" ");
 
-function ToggleSwitch({ values, selected, colors, handleNewSelection, isDark = false }) {
+function ToggleSwitch({ values, selected, colors, handleNewSelection, isDark = false, counts = null }) {
+  const tabWidth = counts ? 110 : 90;
   const selectionStyle = useCallback(() => {
     const index = values.indexOf(selected);
+    if (index === -1) return { display: 'none' };
     return {
-      left: `${index * 90}px`,
+      left: `${index * tabWidth}px`,
       background: colors[index],
     };
-  }, [values, selected, colors]);
+  }, [values, selected, colors, tabWidth]);
 
   return (
     <div style={{
@@ -39,7 +41,7 @@ function ToggleSwitch({ values, selected, colors, handleNewSelection, isDark = f
               position: 'relative',
               zIndex: 10,
               height: '36px',
-              width: '90px',
+              width: `${tabWidth}px`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -49,7 +51,7 @@ function ToggleSwitch({ values, selected, colors, handleNewSelection, isDark = f
               fontSize: '13px',
             }}
           >
-            {titleCase(val)}
+            {counts ? `${titleCase(val)} (${counts[val] ?? 0})` : titleCase(val)}
           </label>
         </span>
       ))}
@@ -61,7 +63,7 @@ function ToggleSwitch({ values, selected, colors, handleNewSelection, isDark = f
           zIndex: 0,
           display: 'block',
           height: '36px',
-          width: '90px',
+          width: `${tabWidth}px`,
           borderRadius: '8px',
           transition: 'all 0.2s ease',
         }}
