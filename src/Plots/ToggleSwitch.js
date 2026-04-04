@@ -10,6 +10,7 @@ function ToggleSwitch({ values, selected, colors, handleNewSelection, isDark = f
   const tabWidth = counts ? 110 : 90;
   const selectionStyle = useCallback(() => {
     const index = values.indexOf(selected);
+    if (index === -1) return { display: 'none' };
     return {
       left: `${index * tabWidth}px`,
       background: colors[index],
@@ -50,7 +51,7 @@ function ToggleSwitch({ values, selected, colors, handleNewSelection, isDark = f
               fontSize: '13px',
             }}
           >
-            {counts ? `${titleCase(val)} (${counts[val]})` : titleCase(val)}
+            {counts ? `${titleCase(val)} (${counts[val] ?? 0})` : titleCase(val)}
           </label>
         </span>
       ))}
