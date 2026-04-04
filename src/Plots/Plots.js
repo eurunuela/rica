@@ -238,6 +238,12 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
     }));
   }, [processedData, keepOriginalOrder]);
 
+  // Count accepted/rejected components for the toggle labels
+  const componentCounts = useMemo(() => ({
+    accepted: processedData.filter(d => d.classification === "accepted").length,
+    rejected: processedData.filter(d => d.classification === "rejected").length,
+  }), [processedData]);
+
   // Find selected index in pie data
   const selectedPieIndex = useMemo(() => {
     return pieData.findIndex((d) => d.originalIdx === selectedIndex);
@@ -385,6 +391,7 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
           colors={[getColors(isDark).accepted, getColors(isDark).rejected]}
           handleNewSelection={handleNewSelection}
           isDark={isDark}
+          counts={componentCounts}
         />
         <ResetAndSave
           handleReset={initializeData}
