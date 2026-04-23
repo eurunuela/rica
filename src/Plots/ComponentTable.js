@@ -66,7 +66,7 @@ const DISPLAY_COLUMNS = [
   "classification_tags",
 ];
 
-function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDark = false, isCollapsed = false, onToggleCollapse }) {
+function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDark = false, isCollapsed = false, onToggleCollapse, sortColumn = '', sortDirection = 'desc', onSort, sortedIndices }) {
   const selectedRowRef = useRef(null);
   const tableContainerRef = useRef(null);
 
@@ -217,37 +217,50 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
         <table style={{ width: '100%', fontSize: '13px', borderCollapse: "separate", borderSpacing: "0" }}>
           <thead>
             <tr>
-              {columns.map((col) => (
-                <th
-                  key={col}
-                  style={{
-                    padding: '12px',
-                    fontWeight: 600,
-                    whiteSpace: 'nowrap',
-                    textAlign: col === "Component" || col === "classification" || col === "classification_tags" ? 'left' : 'right',
-                    position: "sticky",
-                    top: 0,
-                    backgroundColor: headerBg,
-                    color: headerColor,
-                    zIndex: 10,
-                  }}
-                >
-                  {getColumnLabel(col)}
-                </th>
-              ))}
+              {columns.map((col) => {
+                const isActive = sortColumn === col;
+                return (
+                  <th
+                    key={col}
+                    onClick={() => onSort?.(col)}
+                    style={{
+                      padding: '12px',
+                      fontWeight: 600,
+                      whiteSpace: 'nowrap',
+                      textAlign: col === "Component" || col === "classification" || col === "classification_tags" ? 'left' : 'right',
+                      position: "sticky",
+                      top: 0,
+                      backgroundColor: headerBg,
+                      color: isActive ? (isDark ? '#60a5fa' : '#2563eb') : headerColor,
+                      zIndex: 10,
+                      cursor: onSort ? 'pointer' : 'default',
+                      userSelect: 'none',
+                    }}
+                    title={onSort ? `Sort by ${getColumnLabel(col)}` : undefined}
+                  >
+                    {getColumnLabel(col)}
+                    {isActive && (
+                      <span style={{ marginLeft: '4px', fontSize: '10px' }}>
+                        {sortDirection === 'asc' ? '↑' : '↓'}
+                      </span>
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
-            {data.map((row, index) => {
-              const classification = getClassification(index);
+            {(sortedIndices || data.map((_, i) => i)).map((originalIdx) => {
+              const row = data[originalIdx];
+              const classification = getClassification(originalIdx);
               return (
                 <tr
-                  key={row.Component || index}
-                  ref={index === selectedIndex ? selectedRowRef : null}
-                  onClick={() => onRowClick(index)}
-                  style={getRowStyle(index)}
+                  key={row?.Component || originalIdx}
+                  ref={originalIdx === selectedIndex ? selectedRowRef : null}
+                  onClick={() => onRowClick(originalIdx)}
+                  style={getRowStyle(originalIdx)}
                   onMouseEnter={(e) => {
-                    if (index !== selectedIndex) {
+                    if (originalIdx !== selectedIndex) {
                       const cells = e.currentTarget.querySelectorAll("td");
                       cells.forEach((cell) => {
                         cell.style.backgroundColor = hoverBg;
@@ -255,7 +268,7 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (index !== selectedIndex) {
+                    if (originalIdx !== selectedIndex) {
                       const cells = e.currentTarget.querySelectorAll("td");
                       cells.forEach((cell) => {
                         cell.style.backgroundColor = "transparent";
@@ -264,7 +277,7 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
                   }}
                 >
                   {columns.map((col, colIndex) => {
-                    const cellStyle = getCellStyle(index, colIndex, columns.length);
+                    const cellStyle = getCellStyle(originalIdx, colIndex, columns.length);
                     if (col === "classification") {
                       return (
                         <td key={col} style={{ ...cellStyle, padding: '12px' }}>
@@ -290,7 +303,7 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
                         </td>
                       );
                     }
-                    const isSelected = index === selectedIndex;
+                    const isSelected = originalIdx === selectedIndex;
                     return (
                       <td
                         key={col}
@@ -299,11 +312,10 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
                           padding: '12px',
                           textAlign: col === "Component" || col === "classification_tags" ? 'left' : 'right',
                           fontWeight: col === "Component" || col === "classification_tags" ? 500 : 400,
-                          // Use dark text on selected rows for contrast
                           color: isSelected ? '#1f2937' : textPrimary,
                         }}
                       >
-                        {formatValue(row[col], col)}
+                        {formatValue(row?.[col], col)}
                       </td>
                     );
                   })}

@@ -59,6 +59,14 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
     return saved !== 'false'; // Default to true unless explicitly set to false
   });
 
+  // Sort column and direction for component table / keyboard navigation
+  const [sortColumn, setSortColumn] = useState(
+    () => localStorage.getItem('rica-sort-column') || ''
+  );
+  const [sortDirection, setSortDirection] = useState(
+    () => localStorage.getItem('rica-sort-direction') || 'desc'
+  );
+
   // Persist preferences to localStorage when they change
   useEffect(() => {
     localStorage.setItem('rica-keep-original-order', keepOriginalOrder.toString());
@@ -71,6 +79,14 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
   useEffect(() => {
     localStorage.setItem('rica-table-collapsed', isTableCollapsed.toString());
   }, [isTableCollapsed]);
+
+  useEffect(() => {
+    localStorage.setItem('rica-sort-column', sortColumn);
+  }, [sortColumn]);
+
+  useEffect(() => {
+    localStorage.setItem('rica-sort-direction', sortDirection);
+  }, [sortDirection]);
 
   // Interactive views (time series + FFT) require only the mixing matrix.
   // The brain viewer additionally requires the NIfTI.
@@ -257,6 +273,38 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
     return pieData.findIndex((d) => d.originalIdx === selectedIndex);
   }, [pieData, selectedIndex]);
 
+  // Navigation order for keyboard arrow keys and component table display.
+  // When a sortColumn is active, components are ordered by that metric.
+  // Otherwise falls back to pieData order (classification-grouped, variance-desc).
+  const navigationOrder = useMemo(() => {
+    if (!sortColumn || !processedData.length) return pieData;
+    const fullData = componentData?.[0] || [];
+    return [...processedData.map((d, i) => ({ ...d, originalIdx: i }))].sort((a, b) => {
+      const valA = fullData[a.originalIdx]?.[sortColumn] ?? 0;
+      const valB = fullData[b.originalIdx]?.[sortColumn] ?? 0;
+      return sortDirection === 'asc' ? valA - valB : valB - valA;
+    });
+  }, [processedData, sortColumn, sortDirection, componentData, pieData]);
+
+  const sortedIndices = useMemo(
+    () => navigationOrder.map((d) => d.originalIdx),
+    [navigationOrder]
+  );
+
+  // Handle column header click: desc → asc → clear
+  const handleSort = useCallback((col) => {
+    if (sortColumn === col) {
+      if (sortDirection === 'asc') {
+        setSortColumn('');
+      } else {
+        setSortDirection('asc');
+      }
+    } else {
+      setSortColumn(col);
+      setSortDirection('desc');
+    }
+  }, [sortColumn, sortDirection]);
+
   // Keyboard shortcuts
   useHotkeys("a", () => handleNewSelection("accepted"), [handleNewSelection]);
   useHotkeys("r", () => handleNewSelection("rejected"), [handleNewSelection]);
@@ -264,31 +312,29 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
   useHotkeys(
     "left",
     () => {
-      // Navigate using pie chart order (wraps around)
-      if (pieData.length === 0) return;
-      const currentPieIdx = pieData.findIndex((d) => d.originalIdx === selectedIndex);
-      const newPieIdx = currentPieIdx <= 0 ? pieData.length - 1 : currentPieIdx - 1;
-      const newOriginalIdx = pieData[newPieIdx].originalIdx;
+      if (navigationOrder.length === 0) return;
+      const currentIdx = navigationOrder.findIndex((d) => d.originalIdx === selectedIndex);
+      const newIdx = currentIdx <= 0 ? navigationOrder.length - 1 : currentIdx - 1;
+      const newOriginalIdx = navigationOrder[newIdx].originalIdx;
       setSelectedIndex(newOriginalIdx);
       setSelectedClassification(processedData[newOriginalIdx]?.classification || "accepted");
       findComponentImage(newOriginalIdx, processedData);
     },
-    [selectedIndex, pieData, processedData, findComponentImage]
+    [selectedIndex, navigationOrder, processedData, findComponentImage]
   );
 
   useHotkeys(
     "right",
     () => {
-      // Navigate using pie chart order (wraps around)
-      if (pieData.length === 0) return;
-      const currentPieIdx = pieData.findIndex((d) => d.originalIdx === selectedIndex);
-      const newPieIdx = currentPieIdx >= pieData.length - 1 ? 0 : currentPieIdx + 1;
-      const newOriginalIdx = pieData[newPieIdx].originalIdx;
+      if (navigationOrder.length === 0) return;
+      const currentIdx = navigationOrder.findIndex((d) => d.originalIdx === selectedIndex);
+      const newIdx = currentIdx >= navigationOrder.length - 1 ? 0 : currentIdx + 1;
+      const newOriginalIdx = navigationOrder[newIdx].originalIdx;
       setSelectedIndex(newOriginalIdx);
       setSelectedClassification(processedData[newOriginalIdx]?.classification || "accepted");
       findComponentImage(newOriginalIdx, processedData);
     },
-    [selectedIndex, pieData, processedData, findComponentImage]
+    [selectedIndex, navigationOrder, processedData, findComponentImage]
   );
 
   // Save handler
@@ -614,6 +660,10 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
         isDark={isDark}
         isCollapsed={isTableCollapsed}
         onToggleCollapse={() => setIsTableCollapsed(!isTableCollapsed)}
+        sortColumn={sortColumn}
+        sortDirection={sortDirection}
+        onSort={handleSort}
+        sortedIndices={sortedIndices}
       />
 
       {/* External Regressors Correlation Heatmap (interactive) or static figure */}
