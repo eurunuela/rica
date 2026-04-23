@@ -46,56 +46,62 @@ function getColumnLabel(key) {
     "classification_tags": "Tags",
     "kappa rank": "κ Rank",
     "rho rank": "ρ Rank",
+    "variance explained rank": "VE Rank",
     "rationale": "Rationale",
   };
   return labels[key] || key;
 }
 
-// Columns to display (in order)
-const DISPLAY_COLUMNS = [
+// Preferred column order — known columns first, then any extras from the TSV
+const PRIORITY_COLUMNS = [
   "Component",
   "kappa",
   "rho",
   "variance explained",
+  "normalized variance explained",
   "kappa rank",
   "rho rank",
+  "variance explained rank",
   "dice_FT2",
   "dice_FS0",
+  "countsigFT2",
+  "countsigFS0",
   "signal-noise_t",
+  "signal-noise_p",
+  "optimal sign",
   "classification",
   "classification_tags",
+  "rationale",
 ];
 
 function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDark = false, isCollapsed = false, onToggleCollapse, sortColumn = '', sortDirection = 'desc', onSort, sortedIndices }) {
   const selectedRowRef = useRef(null);
   const tableContainerRef = useRef(null);
 
-  // Scroll selected row into view when selection changes (only if not collapsed)
+  // Scroll selected row into view within the table container only (don't scroll the page)
   useEffect(() => {
-    if (isCollapsed) return; // Don't auto-scroll when collapsed
+    if (isCollapsed) return;
     if (selectedRowRef.current && tableContainerRef.current) {
       const container = tableContainerRef.current;
       const row = selectedRowRef.current;
-
-      // Calculate if row is visible in the container
       const containerRect = container.getBoundingClientRect();
       const rowRect = row.getBoundingClientRect();
-
-      // Check if row is outside visible area
       if (rowRect.top < containerRect.top || rowRect.bottom > containerRect.bottom) {
-        row.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
+        const targetScrollTop =
+          row.offsetTop - container.clientHeight / 2 + row.offsetHeight / 2;
+        container.scrollTo({ top: targetScrollTop, behavior: "smooth" });
       }
     }
   }, [selectedIndex, isCollapsed]);
 
-  // Determine which columns exist in the data
+  // Show all columns: priority-ordered known columns first, then any extras from the TSV
   const columns = useMemo(() => {
     if (!data?.length) return [];
-    const availableKeys = Object.keys(data[0]);
-    return DISPLAY_COLUMNS.filter((col) => availableKeys.includes(col));
+    const availableKeys = new Set(Object.keys(data[0]));
+    const priorityVisible = PRIORITY_COLUMNS.filter((col) => availableKeys.has(col));
+    const prioritySet = new Set(priorityVisible);
+    const extra = Object.keys(data[0]).filter((col) => !prioritySet.has(col));
+    return [...priorityVisible, ...extra];
   }, [data]);
 
   if (!data?.length) {
