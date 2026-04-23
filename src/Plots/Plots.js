@@ -280,15 +280,25 @@ function Plots({ componentData, componentFigures, originalData, mixingMatrix, ni
     if (!sortColumn || !processedData.length) return pieData;
     const fullData = componentData?.[0] || [];
     return [...processedData.map((d, i) => ({ ...d, originalIdx: i }))].sort((a, b) => {
-      const valA = fullData[a.originalIdx]?.[sortColumn] ?? 0;
-      const valB = fullData[b.originalIdx]?.[sortColumn] ?? 0;
+      const valA = fullData[a.originalIdx]?.[sortColumn] ?? null;
+      const valB = fullData[b.originalIdx]?.[sortColumn] ?? null;
+      if (valA === null && valB === null) return 0;
+      if (valA === null) return 1;
+      if (valB === null) return -1;
+      if (typeof valA === 'string' || typeof valB === 'string') {
+        return sortDirection === 'asc'
+          ? String(valA).localeCompare(String(valB))
+          : String(valB).localeCompare(String(valA));
+      }
       return sortDirection === 'asc' ? valA - valB : valB - valA;
     });
   }, [processedData, sortColumn, sortDirection, componentData, pieData]);
 
   const sortedIndices = useMemo(
-    () => navigationOrder.map((d) => d.originalIdx),
-    [navigationOrder]
+    () => sortColumn
+      ? navigationOrder.map((d) => d.originalIdx)
+      : processedData.map((_, i) => i),
+    [navigationOrder, sortColumn, processedData]
   );
 
   // Handle column header click: desc → asc → clear

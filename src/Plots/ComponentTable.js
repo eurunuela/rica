@@ -225,30 +225,60 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
             <tr>
               {columns.map((col) => {
                 const isActive = sortColumn === col;
+                const textAlign = col === "Component" || col === "classification" || col === "classification_tags" ? 'left' : 'right';
+                const ariaSort = isActive ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none';
                 return (
                   <th
                     key={col}
-                    onClick={() => onSort?.(col)}
+                    aria-sort={ariaSort}
                     style={{
                       padding: '12px',
                       fontWeight: 600,
                       whiteSpace: 'nowrap',
-                      textAlign: col === "Component" || col === "classification" || col === "classification_tags" ? 'left' : 'right',
+                      textAlign,
                       position: "sticky",
                       top: 0,
                       backgroundColor: headerBg,
                       color: isActive ? (isDark ? '#60a5fa' : '#2563eb') : headerColor,
                       zIndex: 10,
-                      cursor: onSort ? 'pointer' : 'default',
                       userSelect: 'none',
                     }}
                     title={onSort ? `Sort by ${getColumnLabel(col)}` : undefined}
                   >
-                    {getColumnLabel(col)}
-                    {isActive && (
-                      <span style={{ marginLeft: '4px', fontSize: '10px' }}>
-                        {sortDirection === 'asc' ? '↑' : '↓'}
-                      </span>
+                    {onSort ? (
+                      <button
+                        type="button"
+                        onClick={() => onSort(col)}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: textAlign === 'left' ? 'flex-start' : 'flex-end',
+                          gap: '4px',
+                          padding: 0,
+                          border: 'none',
+                          background: 'transparent',
+                          color: 'inherit',
+                          font: 'inherit',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <span>{getColumnLabel(col)}</span>
+                        {isActive && (
+                          <span style={{ fontSize: '10px' }} aria-hidden="true">
+                            {sortDirection === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </button>
+                    ) : (
+                      <>
+                        {getColumnLabel(col)}
+                        {isActive && (
+                          <span style={{ marginLeft: '4px', fontSize: '10px' }}>
+                            {sortDirection === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </>
                     )}
                   </th>
                 );
@@ -256,7 +286,10 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
             </tr>
           </thead>
           <tbody>
-            {(sortedIndices || data.map((_, i) => i)).map((originalIdx) => {
+            {((Array.isArray(sortedIndices) && sortedIndices.length === data.length)
+              ? sortedIndices
+              : data.map((_, i) => i)
+            ).map((originalIdx) => {
               const row = data[originalIdx];
               const classification = getClassification(originalIdx);
               return (
