@@ -46,56 +46,62 @@ function getColumnLabel(key) {
     "classification_tags": "Tags",
     "kappa rank": "κ Rank",
     "rho rank": "ρ Rank",
+    "variance explained rank": "VE Rank",
     "rationale": "Rationale",
   };
   return labels[key] || key;
 }
 
-// Columns to display (in order)
-const DISPLAY_COLUMNS = [
+// Preferred column order — known columns first, then any extras from the TSV
+const PRIORITY_COLUMNS = [
   "Component",
   "kappa",
   "rho",
   "variance explained",
+  "normalized variance explained",
   "kappa rank",
   "rho rank",
+  "variance explained rank",
   "dice_FT2",
   "dice_FS0",
+  "countsigFT2",
+  "countsigFS0",
   "signal-noise_t",
+  "signal-noise_p",
+  "optimal sign",
   "classification",
   "classification_tags",
+  "rationale",
 ];
 
-function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDark = false, isCollapsed = false, onToggleCollapse }) {
+function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDark = false, isCollapsed = false, onToggleCollapse, sortColumn = '', sortDirection = 'desc', onSort, sortedIndices }) {
   const selectedRowRef = useRef(null);
   const tableContainerRef = useRef(null);
 
-  // Scroll selected row into view when selection changes (only if not collapsed)
+  // Scroll selected row into view within the table container only (don't scroll the page)
   useEffect(() => {
-    if (isCollapsed) return; // Don't auto-scroll when collapsed
+    if (isCollapsed) return;
     if (selectedRowRef.current && tableContainerRef.current) {
       const container = tableContainerRef.current;
       const row = selectedRowRef.current;
-
-      // Calculate if row is visible in the container
       const containerRect = container.getBoundingClientRect();
       const rowRect = row.getBoundingClientRect();
-
-      // Check if row is outside visible area
       if (rowRect.top < containerRect.top || rowRect.bottom > containerRect.bottom) {
-        row.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
+        const targetScrollTop =
+          row.offsetTop - container.clientHeight / 2 + row.offsetHeight / 2;
+        container.scrollTo({ top: targetScrollTop, behavior: "smooth" });
       }
     }
   }, [selectedIndex, isCollapsed]);
 
-  // Determine which columns exist in the data
+  // Show all columns: priority-ordered known columns first, then any extras from the TSV
   const columns = useMemo(() => {
     if (!data?.length) return [];
-    const availableKeys = Object.keys(data[0]);
-    return DISPLAY_COLUMNS.filter((col) => availableKeys.includes(col));
+    const availableKeys = new Set(Object.keys(data[0]));
+    const priorityVisible = PRIORITY_COLUMNS.filter((col) => availableKeys.has(col));
+    const prioritySet = new Set(priorityVisible);
+    const extra = Object.keys(data[0]).filter((col) => !prioritySet.has(col));
+    return [...priorityVisible, ...extra];
   }, [data]);
 
   if (!data?.length) {
@@ -217,37 +223,83 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
         <table style={{ width: '100%', fontSize: '13px', borderCollapse: "separate", borderSpacing: "0" }}>
           <thead>
             <tr>
-              {columns.map((col) => (
-                <th
-                  key={col}
-                  style={{
-                    padding: '12px',
-                    fontWeight: 600,
-                    whiteSpace: 'nowrap',
-                    textAlign: col === "Component" || col === "classification" || col === "classification_tags" ? 'left' : 'right',
-                    position: "sticky",
-                    top: 0,
-                    backgroundColor: headerBg,
-                    color: headerColor,
-                    zIndex: 10,
-                  }}
-                >
-                  {getColumnLabel(col)}
-                </th>
-              ))}
+              {columns.map((col) => {
+                const isActive = sortColumn === col;
+                const textAlign = col === "Component" || col === "classification" || col === "classification_tags" ? 'left' : 'right';
+                const ariaSort = isActive ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none';
+                return (
+                  <th
+                    key={col}
+                    aria-sort={ariaSort}
+                    style={{
+                      padding: '12px',
+                      fontWeight: 600,
+                      whiteSpace: 'nowrap',
+                      textAlign,
+                      position: "sticky",
+                      top: 0,
+                      backgroundColor: headerBg,
+                      color: isActive ? (isDark ? '#60a5fa' : '#2563eb') : headerColor,
+                      zIndex: 10,
+                      userSelect: 'none',
+                    }}
+                    title={onSort ? `Sort by ${getColumnLabel(col)}` : undefined}
+                  >
+                    {onSort ? (
+                      <button
+                        type="button"
+                        onClick={() => onSort(col)}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: textAlign === 'left' ? 'flex-start' : 'flex-end',
+                          gap: '4px',
+                          padding: 0,
+                          border: 'none',
+                          background: 'transparent',
+                          color: 'inherit',
+                          font: 'inherit',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <span>{getColumnLabel(col)}</span>
+                        {isActive && (
+                          <span style={{ fontSize: '10px' }} aria-hidden="true">
+                            {sortDirection === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </button>
+                    ) : (
+                      <>
+                        {getColumnLabel(col)}
+                        {isActive && (
+                          <span style={{ marginLeft: '4px', fontSize: '10px' }}>
+                            {sortDirection === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
-            {data.map((row, index) => {
-              const classification = getClassification(index);
+            {((Array.isArray(sortedIndices) && sortedIndices.length === data.length)
+              ? sortedIndices
+              : data.map((_, i) => i)
+            ).map((originalIdx) => {
+              const row = data[originalIdx];
+              const classification = getClassification(originalIdx);
               return (
                 <tr
-                  key={row.Component || index}
-                  ref={index === selectedIndex ? selectedRowRef : null}
-                  onClick={() => onRowClick(index)}
-                  style={getRowStyle(index)}
+                  key={row?.Component || originalIdx}
+                  ref={originalIdx === selectedIndex ? selectedRowRef : null}
+                  onClick={() => onRowClick(originalIdx)}
+                  style={getRowStyle(originalIdx)}
                   onMouseEnter={(e) => {
-                    if (index !== selectedIndex) {
+                    if (originalIdx !== selectedIndex) {
                       const cells = e.currentTarget.querySelectorAll("td");
                       cells.forEach((cell) => {
                         cell.style.backgroundColor = hoverBg;
@@ -255,7 +307,7 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (index !== selectedIndex) {
+                    if (originalIdx !== selectedIndex) {
                       const cells = e.currentTarget.querySelectorAll("td");
                       cells.forEach((cell) => {
                         cell.style.backgroundColor = "transparent";
@@ -264,7 +316,7 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
                   }}
                 >
                   {columns.map((col, colIndex) => {
-                    const cellStyle = getCellStyle(index, colIndex, columns.length);
+                    const cellStyle = getCellStyle(originalIdx, colIndex, columns.length);
                     if (col === "classification") {
                       return (
                         <td key={col} style={{ ...cellStyle, padding: '12px' }}>
@@ -290,7 +342,7 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
                         </td>
                       );
                     }
-                    const isSelected = index === selectedIndex;
+                    const isSelected = originalIdx === selectedIndex;
                     return (
                       <td
                         key={col}
@@ -299,11 +351,10 @@ function ComponentTable({ data, selectedIndex, onRowClick, classifications, isDa
                           padding: '12px',
                           textAlign: col === "Component" || col === "classification_tags" ? 'left' : 'right',
                           fontWeight: col === "Component" || col === "classification_tags" ? 500 : 400,
-                          // Use dark text on selected rows for contrast
                           color: isSelected ? '#1f2937' : textPrimary,
                         }}
                       >
-                        {formatValue(row[col], col)}
+                        {formatValue(row?.[col], col)}
                       </td>
                     );
                   })}
