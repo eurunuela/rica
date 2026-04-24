@@ -514,11 +514,11 @@ function App() {
                   />
                 </TabPanel>
                 <TabPanel index={2}>
-                  <Carpets images={carpetFigures} isDark={isDark} />
+                  <Carpets images={carpetFigures?.[r] || []} isDark={isDark} />
                 </TabPanel>
                 <TabPanel index={3}>
                   <Diagnostics
-                    images={diagnosticFigures}
+                    images={diagnosticFigures?.[r] || []}
                     qcNiftiBuffers={qcNiftiBuffers?.[r] || {}}
                     maskBuffer={maskBuffer?.[r]}
                     isDark={isDark}

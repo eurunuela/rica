@@ -183,8 +183,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
 
       // Per-run accumulators (indexed arrays)
       const compFigures = Array.from({ length: N }, () => []);
-      const carpetFigures = [];      // flat — already multi-run tolerant
-      const diagnosticFigures = []; // flat — already multi-run tolerant
+      const carpetFigures = Array.from({ length: N }, () => []);
+      const diagnosticFigures = Array.from({ length: N }, () => []);
       const info = new Array(N).fill("");
       const components = new Array(N).fill(null).map(() => []);
       const originalData = new Array(N).fill(null).map(() => []);
@@ -223,11 +223,11 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
             const blob = await response.blob();
             const dataUrl = await blobToDataURL(blob);
             if (filename.includes("carpet_")) {
-              carpetFigures.push({ name: filename, img: dataUrl });
+              for (const i of targets) carpetFigures[i].push({ name: filename, img: dataUrl });
             } else if (filename.includes("confound_correlations")) {
               for (const i of targets) externalRegressorsFigure[i] = dataUrl;
             } else {
-              diagnosticFigures.push({ name: filename, img: dataUrl });
+              for (const i of targets) diagnosticFigures[i].push({ name: filename, img: dataUrl });
             }
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
@@ -414,13 +414,13 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       });
       await Promise.all(filePromises);
 
-      // Sort component figures by name per run
+      // Sort figures by name per run, apply manual classifications
       for (let i = 0; i < N; i++) {
         compFigures[i].sort((a, b) => a.name.localeCompare(b.name));
+        carpetFigures[i].sort((a, b) => a.name.localeCompare(b.name));
+        diagnosticFigures[i].sort((a, b) => a.name.localeCompare(b.name));
         applyManualClassifications(components[i], manualClassificationData[i]);
       }
-      carpetFigures.sort((a, b) => a.name.localeCompare(b.name));
-      diagnosticFigures.sort((a, b) => a.name.localeCompare(b.name));
 
       trackDatasetLoaded();
 
@@ -553,8 +553,8 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
 
       // Per-run accumulators (indexed arrays)
       const compFigures = Array.from({ length: N }, () => []);
-      const carpetFigures = [];      // flat — already multi-run tolerant
-      const diagnosticFigures = []; // flat — already multi-run tolerant
+      const carpetFigures = Array.from({ length: N }, () => []);
+      const diagnosticFigures = Array.from({ length: N }, () => []);
       const info = new Array(N).fill("");
       const components = new Array(N).fill(null).map(() => []);
       const originalData = new Array(N).fill(null).map(() => []);
@@ -588,11 +588,11 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
           if (filename.endsWith(".svg")) {
             const dataUrl = await readFileAsDataURL(file);
             if (filename.includes("carpet_")) {
-              carpetFigures.push({ name: filename, img: dataUrl });
+              for (const i of targets) carpetFigures[i].push({ name: filename, img: dataUrl });
             } else if (filename.includes("confound_correlations")) {
               for (const i of targets) externalRegressorsFigure[i] = dataUrl;
             } else {
-              diagnosticFigures.push({ name: filename, img: dataUrl });
+              for (const i of targets) diagnosticFigures[i].push({ name: filename, img: dataUrl });
             }
             setLoadingProgress((prev) => ({ ...prev, current: prev.current + 1 }));
           }
@@ -763,13 +763,13 @@ function IntroPopup({ onDataLoad, onLoadingStart, closePopup, isLoading, isDark 
       // Wait for all files to be processed
       await Promise.all(filePromises);
 
-      // Sort component figures by name per run, apply manual classifications
+      // Sort figures by name per run, apply manual classifications
       for (let i = 0; i < N; i++) {
         compFigures[i].sort((a, b) => a.name.localeCompare(b.name));
+        carpetFigures[i].sort((a, b) => a.name.localeCompare(b.name));
+        diagnosticFigures[i].sort((a, b) => a.name.localeCompare(b.name));
         applyManualClassifications(components[i], manualClassificationData[i]);
       }
-      carpetFigures.sort((a, b) => a.name.localeCompare(b.name));
-      diagnosticFigures.sort((a, b) => a.name.localeCompare(b.name));
 
       trackDatasetLoaded();
 
